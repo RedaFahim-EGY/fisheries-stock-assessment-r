@@ -1,0 +1,299 @@
+---
+title: "Exploring fishery data before assessment"
+subtitle: "Catch, effort and CPUE in a simulated exploited stock"
+author: "Reda M. Fahim"
+date: last-modified
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-tools: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+## Why start here?
+
+A stock assessment should not begin with model fitting. It should begin with the **information available about the fishery**, the assumptions linking those observations to the underlying population, and the patterns that may need explanation.
+
+This example uses a deliberately simple simulated stock to explore three common annual time series:
+
+- catch,
+- fishing effort, and
+- catch per unit effort (CPUE).
+
+The objective is **not** to estimate stock status. The objective is to ask what can — and cannot — reasonably be inferred before choosing an assessment model.
+
+## Observation model used in the simulation
+
+For this introductory example, CPUE is generated around a latent relative biomass trajectory according to
+
+$$
+I_t = q B_t \exp(\epsilon_t),
+$$
+
+where $I_t$ is the observed CPUE index, $B_t$ is latent relative biomass, $q$ is catchability, and $\epsilon_t$ represents observation error.
+
+Catch is then generated approximately as
+
+$$
+C_t = E_t I_t \exp(\eta_t),
+$$
+
+where $C_t$ is catch, $E_t$ is fishing effort and $\eta_t$ introduces additional variability.
+
+For the simulation, $q$ is held constant. This is a useful simplifying assumption for teaching, but it is often one of the first assumptions that should be questioned with real fishery data.
+
+## Generate the example data
+
+```{r}
+#| label: simulate-data
+
+set.seed(20260904)
+
+library(ggplot2)
+library(patchwork)
+library(knitr)
+
+year <- 2000:2025
+n_years <- length(year)
+
+# Latent relative biomass: decline followed by partial rebuilding.
+biomass_rel <- c(
+  seq(1.00, 0.48, length.out = 16),
+  seq(0.50, 0.72, length.out = n_years - 16)
+)
+
+# Fishing effort rises and later stabilizes slightly below its peak.
+effort <- c(
+  seq(280, 470, length.out = 14),
+  seq(465, 430, length.out = n_years - 14)
+)
+effort <- round(effort * exp(rnorm(n_years, 0, 0.04)))
+
+# Constant catchability for the introductory simulation.
+q <- 0.010
+
+# CPUE as a noisy relative abundance index.
+cpue <- q * biomass_rel * exp(rnorm(n_years, 0, 0.10))
+
+# Catch generated from effort and CPUE with additional variability.
+catch_t <- effort * cpue * 1000 * exp(rnorm(n_years, 0, 0.08))
+
+fishery <- data.frame(
+  year = year,
+  catch_t = round(catch_t, 1),
+  effort = effort,
+  cpue = round(cpue, 4)
+)
+
+stopifnot(
+  all(fishery$catch_t > 0),
+  all(fishery$effort > 0),
+  all(fishery$cpue > 0),
+  !anyNA(fishery)
+)
+```
+
+The first six observations are:
+
+```{r}
+#| label: first-observations
+
+kable(
+  head(fishery),
+  digits = c(0, 1, 0, 4),
+  col.names = c("Year", "Catch (t)", "Effort", "CPUE"),
+  caption = "First six years of the simulated fishery time series."
+)
+```
+
+## Examine each time series separately
+
+```{r}
+#| label: time-series
+#| fig-cap: "Annual catch, fishing effort and CPUE for the simulated fishery."
+#| fig-width: 8
+#| fig-height: 8
+
+p_catch <- ggplot(fishery, aes(year, catch_t)) +
+  geom_line(linewidth = 0.7) +
+  geom_point(size = 1.8) +
+  labs(x = NULL, y = "Catch (t)", title = "Annual catch") +
+  theme_minimal(base_size = 12)
+
+p_effort <- ggplot(fishery, aes(year, effort)) +
+  geom_line(linewidth = 0.7) +
+  geom_point(size = 1.8) +
+  labs(x = NULL, y = "Effort", title = "Fishing effort") +
+  theme_minimal(base_size = 12)
+
+p_cpue <- ggplot(fishery, aes(year, cpue)) +
+  geom_line(linewidth = 0.7) +
+  geom_point(size = 1.8) +
+  labs(x = "Year", y = "CPUE", title = "Relative abundance index") +
+  theme_minimal(base_size = 12)
+
+p_catch / p_effort / p_cpue
+```
+
+Viewed separately, each series contains information, but interpretation depends on their relationship. Catch alone cannot distinguish a productive stock under high fishing pressure from a depleted stock maintained by high effort. Effort alone says little about population size. CPUE may be informative about relative abundance, but only if the relationship between fishing activity and stock availability is sufficiently understood.
+
+## Compare early and recent periods
+
+```{r}
+#| label: trend-summary
+
+first_five <- fishery[1:5, ]
+last_five <- fishery[(nrow(fishery) - 4):nrow(fishery), ]
+
+trend_summary <- data.frame(
+  Indicator = c("Catch", "Effort", "CPUE"),
+  Early = c(
+    mean(first_five$catch_t),
+    mean(first_five$effort),
+    mean(first_five$cpue)
+  ),
+  Recent = c(
+    mean(last_five$catch_t),
+    mean(last_five$effort),
+    mean(last_five$cpue)
+  )
+)
+
+trend_summary$Change_pct <- 100 * (
+  trend_summary$Recent / trend_summary$Early - 1
+)
+
+kable(
+  trend_summary,
+  digits = c(0, 3, 3, 1),
+  col.names = c("Indicator", "First 5-year mean", "Last 5-year mean", "Change (%)"),
+  caption = "Comparison of the first and last five years."
+)
+
+catch_change <- trend_summary$Change_pct[trend_summary$Indicator == "Catch"]
+effort_change <- trend_summary$Change_pct[trend_summary$Indicator == "Effort"]
+cpue_change <- trend_summary$Change_pct[trend_summary$Indicator == "CPUE"]
+```
+
+In this particular simulation, mean fishing effort in the final five years is `r round(effort_change, 1)`% different from the first five years, while mean CPUE is `r round(cpue_change, 1)`% different. Catch changes by `r round(catch_change, 1)`% over the same comparison.
+
+These summaries are descriptive, not inferential. They identify patterns that a later assessment should be able to explain.
+
+## Put the indicators on a common scale
+
+The three variables have different units. Indexing each series to its own mean makes their relative trajectories easier to compare without pretending that their absolute scales are equivalent.
+
+```{r}
+#| label: standardized-indicators
+#| fig-cap: "Catch, effort and CPUE expressed relative to their own time-series means."
+#| fig-width: 8
+#| fig-height: 4.8
+
+indexed <- data.frame(
+  year = rep(fishery$year, 3),
+  indicator = factor(
+    rep(c("Catch", "Effort", "CPUE"), each = nrow(fishery)),
+    levels = c("Catch", "Effort", "CPUE")
+  ),
+  relative_value = c(
+    fishery$catch_t / mean(fishery$catch_t),
+    fishery$effort / mean(fishery$effort),
+    fishery$cpue / mean(fishery$cpue)
+  )
+)
+
+ggplot(indexed, aes(year, relative_value, linetype = indicator)) +
+  geom_hline(yintercept = 1, linewidth = 0.4) +
+  geom_line(linewidth = 0.8) +
+  labs(
+    x = "Year",
+    y = "Relative to time-series mean",
+    linetype = NULL
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top")
+```
+
+The divergence among indicators is itself informative. A period of rising effort accompanied by declining CPUE deserves different biological and fishery interpretation from a period when both effort and CPUE increase.
+
+## Because this is a simulation, we can see the hidden truth
+
+In a real assessment, biomass is not observed directly. Here, however, the latent biomass trajectory used to generate the data is known. This allows us to compare the noisy CPUE index with the underlying relative biomass that it is intended to represent.
+
+```{r}
+#| label: cpue-vs-truth
+#| fig-cap: "Observed CPUE compared with the latent biomass trajectory used in the simulation. Both are scaled to their first year."
+#| fig-width: 8
+#| fig-height: 4.8
+
+truth_comparison <- data.frame(
+  year = rep(year, 2),
+  series = factor(
+    rep(c("Latent biomass", "Observed CPUE"), each = n_years),
+    levels = c("Latent biomass", "Observed CPUE")
+  ),
+  relative_value = c(
+    biomass_rel / biomass_rel[1],
+    fishery$cpue / fishery$cpue[1]
+  )
+)
+
+ggplot(truth_comparison, aes(year, relative_value, linetype = series)) +
+  geom_line(linewidth = 0.9) +
+  labs(
+    x = "Year",
+    y = "Relative to first year",
+    linetype = NULL
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top")
+```
+
+Even under constant catchability, observation error means that the abundance index does not reproduce biomass perfectly. With real data, the situation is more difficult because $B_t$ is unknown and catchability may itself change through time.
+
+::: {.callout-important}
+## CPUE is not automatically an abundance index
+
+A useful conceptual relationship is
+
+$$
+I_t = q_t B_t.
+$$
+
+Treating CPUE as proportional to abundance requires assumptions about $q_t$. Changes in fishing technology, targeting, fleet composition, spatial concentration, fisher behaviour, regulations, reporting practices or environmental conditions can all alter that relationship.
+
+Standardization and fishery-specific knowledge are therefore part of the assessment problem, not merely data-processing details.
+:::
+
+## What should be investigated before model fitting?
+
+For a real stock, this exploratory stage would normally lead to questions such as:
+
+1. Are catch definitions and units consistent through time?
+2. Does effort measure the component of fishing activity that actually drives fishing mortality?
+3. Has fleet composition, gear efficiency or targeting changed?
+4. Is CPUE standardized appropriately for changes in catchability and fishing behaviour?
+5. Are there survey indices independent of commercial fishing activity?
+6. What length, age, maturity, growth, mortality or recruitment information is available?
+7. Are there structural breaks in monitoring, regulations, spatial coverage or reporting?
+8. Which uncertainties are observation errors, and which reflect genuine process variation?
+
+The answers to those questions help determine which assessment approaches are scientifically defensible.
+
+## Interpretation
+
+The simulated data contain a period in which effort increases while CPUE declines, followed by partial recovery of the abundance signal. That pattern is consistent with the trajectory used to generate the example, but it should **not** be read as a generic diagnostic of depletion or rebuilding.
+
+The broader lesson is methodological: **data exploration is part of stock assessment**. It establishes the evidence, assumptions and contradictions that the assessment model will later be asked to reconcile.
+
+## Reproducibility
+
+The full simulation is also available as a standalone R script:
+
+[`01_simulated_fishery.R`](01_simulated_fishery.R)
+
+The dataset is entirely simulated and contains no confidential or institutional information.
