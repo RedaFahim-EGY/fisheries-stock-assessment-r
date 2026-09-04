@@ -1,0 +1,354 @@
+---
+title: "Data quality and consistency before assessment"
+subtitle: "From a structured sampling frame to a defensible assessment-ready dataset"
+author: "Reda M. Fahim"
+date: last-modified
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-tools: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+## Why this module matters
+
+Before fitting any stock-assessment model, the underlying observations should be treated as **evidence that must be audited**, not simply as a table that happens to be available.
+
+A time series can look smooth while hiding changes in units, duplicated strata, sampling gaps, coding inconsistencies, changes in monitoring protocols, weak spatial coverage, transcription errors, or conflicts among variables that should be mechanically related.
+
+This module develops a reproducible quality-control workflow around a richer simulated fishery-monitoring dataset. The example is deliberately constructed to contain several realistic problems so that the objective is not merely to produce clean plots, but to demonstrate how inconsistencies can be detected, documented and carried forward transparently.
+
+::: {.callout-important}
+## No model is fitted here
+
+The purpose of this stage is to decide whether the information is internally coherent and sufficiently understood to support later analysis. Records are not silently deleted because they look inconvenient. Each problem is flagged, investigated conceptually, and linked to a defensible action.
+:::
+
+## Simulated monitoring design
+
+The sampling frame covers:
+
+- 2012–2025,
+- four quarters per year,
+- three spatial areas: West, Central and East,
+- three fleets: bottom trawl, gillnet and longline,
+- sampling intensity, effort, catch, reported CPUE and mean sampled length,
+- two monitoring protocols separated by a documented change after 2019.
+
+The data are entirely simulated. Several quality problems are introduced intentionally, including a missing sampling stratum, a duplicate key, inconsistent catch units, an inconsistent area code, an invalid effort value, a catch transcription error, a conflicting CPUE value and uneven sampling coverage.
+
+```{r}
+#| label: setup-module-02
+
+library(ggplot2)
+library(patchwork)
+library(knitr)
+
+source("02_data_quality_checks.R")
+```
+
+The first records illustrate the structure of the raw table:
+
+```{r}
+#| label: raw-preview
+
+kable(
+  head(raw_fishery[, c(
+    "record_id", "year", "quarter", "area", "fleet",
+    "trips_sampled", "effort_days", "catch_kg", "catch_unit",
+    "reported_cpue", "mean_length_cm"
+  )]),
+  caption = "First six records in the simulated raw monitoring dataset."
+)
+```
+
+## 1. Start with the sampling frame, not the values
+
+A quality review should first ask whether the expected combinations of year, season, area and fleet actually exist. Missing strata can alter apparent trends even when all observed values are numerically plausible.
+
+The complete design contains `r nrow(expected_frame)` expected year × quarter × area × fleet combinations. After standardizing the known area-code inconsistency, `r nrow(missing_strata)` expected stratum is absent.
+
+```{r}
+#| label: missing-strata-table
+
+kable(
+  missing_strata[, c("year", "quarter", "area", "fleet")],
+  caption = "Expected sampling strata that are absent from the raw dataset."
+)
+```
+
+A single missing cell does not automatically invalidate a time series, but it matters **where** the gap occurs. If the missing stratum represents a fleet, season or area with systematically different size structure or catchability, aggregation across years can become unbalanced.
+
+## 2. Examine sampling coverage through space and time
+
+The number of trips sampled is not itself a biological indicator. It is a description of the observation process. Large changes in sampling intensity can change the precision and representativeness of derived indicators.
+
+```{r}
+#| label: coverage-heatmap
+#| fig-cap: "Total sampled trips by year and area. A deliberate reduction in East-area sampling during 2016 illustrates why coverage should be examined explicitly."
+#| fig-width: 8
+#| fig-height: 5
+
+coverage_year_area$area_standardized <- factor(
+  coverage_year_area$area_standardized,
+  levels = c("West", "Central", "East")
+)
+
+ggplot(coverage_year_area, aes(year, area_standardized, fill = trips_sampled)) +
+  geom_tile() +
+  geom_text(aes(label = trips_sampled), size = 2.8) +
+  scale_x_continuous(breaks = years) +
+  labs(
+    x = "Year",
+    y = "Area",
+    fill = "Trips sampled",
+    title = "Sampling coverage is part of the data-generating process"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+The same question can be asked by fleet. A stable aggregate sample size can hide declining coverage in one fleet if another fleet is sampled more intensively.
+
+```{r}
+#| label: coverage-by-fleet
+#| fig-cap: "Sampling intensity by fleet and year."
+#| fig-width: 8
+#| fig-height: 4.8
+
+ggplot(coverage_year_fleet, aes(year, trips_sampled, linetype = fleet)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.7) +
+  labs(
+    x = "Year",
+    y = "Trips sampled",
+    linetype = NULL
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top")
+```
+
+## 3. Check uniqueness before aggregation
+
+The intended observation key is:
+
+**year × quarter × area × fleet**.
+
+Duplicated keys are especially dangerous because aggregation may silently double-count catch, effort or sample size.
+
+```{r}
+#| label: duplicate-keys
+
+kable(
+  duplicate_keys[, c(
+    "record_id", "year", "quarter", "area", "fleet",
+    "trips_sampled", "effort_days", "catch_kg"
+  )],
+  caption = "Records sharing the same intended sampling key."
+)
+```
+
+The correct action depends on provenance. An exact duplicate caused by repeated database extraction may be removable; two genuine sampling events that happen to share an overly coarse key may indicate that the key itself is insufficient. A reproducible workflow should therefore **flag first and resolve second**.
+
+## 4. Audit units and controlled vocabularies
+
+Numerical columns should never be interpreted without their units. Here, most catch values are stored in kilograms, but two observations are explicitly recorded in tonnes.
+
+```{r}
+#| label: units-and-codes
+
+kable(
+  unit_summary,
+  caption = "Catch units found in the raw data."
+)
+
+kable(
+  coding_summary,
+  caption = "Area codes found in the raw data before harmonization."
+)
+```
+
+The harmonized dataset converts tonnes to kilograms and maps the non-standard area code `E` to `East`, while preserving the original fields. This distinction matters: **harmonization should not erase provenance**.
+
+## 5. Test mechanical consistency among related fields
+
+Some fisheries variables are linked by accounting relationships. If catch, effort and reported CPUE are all present, their mutual consistency can be checked directly.
+
+For records with valid effort, a recalculated CPUE is obtained from standardized catch divided by effort. The percentage difference from reported CPUE is then used as a diagnostic rather than assuming either field is automatically correct.
+
+```{r}
+#| label: cpue-consistency-plot
+#| fig-cap: "Reported CPUE versus CPUE recalculated from standardized catch and effort. The diagonal represents exact agreement."
+#| fig-width: 6.5
+#| fig-height: 5.5
+
+cpue_plot_data <- clean_fishery[
+  is.finite(clean_fishery$cpue_recalculated) &
+    clean_fishery$cpue_recalculated > 0,
+]
+
+ggplot(cpue_plot_data, aes(cpue_recalculated, reported_cpue)) +
+  geom_abline(slope = 1, intercept = 0, linewidth = 0.6) +
+  geom_point(aes(shape = cpue_inconsistent), alpha = 0.75, size = 2) +
+  labs(
+    x = "Recalculated CPUE",
+    y = "Reported CPUE",
+    shape = "Flagged mismatch"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+A tolerance of ±15% is used here only as a demonstration threshold. In a real monitoring programme, the appropriate tolerance should reflect how the variables are defined, rounded and reported.
+
+```{r}
+#| label: cpue-inconsistent-table
+
+cpue_conflicts <- clean_fishery[
+  clean_fishery$cpue_inconsistent,
+  c(
+    "record_id", "year", "quarter", "area", "fleet",
+    "reported_cpue", "cpue_recalculated", "cpue_difference_pct"
+  )
+]
+
+kable(
+  cpue_conflicts,
+  digits = 2,
+  caption = "Records with material disagreement between reported and recalculated CPUE."
+)
+```
+
+## 6. Separate impossible values from unusual values
+
+A negative effort value is not merely an outlier; it is **physically invalid**. An unusually high CPUE, by contrast, could reflect a transcription error, aggregation error, targeted fishing event, local concentration of fish or a genuine extreme observation.
+
+Those categories should not be treated identically.
+
+```{r}
+#| label: catch-effort-diagnostic
+#| fig-cap: "Standardized catch versus effort. Invalid effort and robust CPUE outliers are shown through diagnostic symbols."
+#| fig-width: 7.5
+#| fig-height: 5.2
+
+ggplot(
+  clean_fishery,
+  aes(effort_days, catch_kg_standardized)
+) +
+  geom_point(
+    aes(shape = quality_status),
+    alpha = 0.7,
+    size = 2
+  ) +
+  scale_y_log10() +
+  labs(
+    x = "Effort days",
+    y = "Standardized catch (kg, log scale)",
+    shape = "QC status"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+Robust outlier detection is performed within fleet × area strata on log CPUE using a median/MAD rule. The purpose is **screening**, not automatic deletion. A statistically extreme observation can still be biologically real.
+
+## 7. Look for changes in the observation system
+
+The simulated monitoring programme changes from a `legacy` protocol through 2019 to a `revised` protocol from 2020 onward. Even if no obvious discontinuity is visible, such metadata should be carried into later analysis because changes in sampling design, measurement practices or fleet coverage can create artificial temporal patterns.
+
+```{r}
+#| label: protocol-summary
+
+kable(
+  protocol_summary,
+  digits = 2,
+  col.names = c("Monitoring protocol", "Fleet", "Mean recalculated CPUE"),
+  caption = "Mean recalculated CPUE by fleet and monitoring protocol after excluding major flagged records."
+)
+```
+
+```{r}
+#| label: annual-indicators
+#| fig-cap: "Annual catch, effort, sampling intensity and mean CPUE after basic quality screening. These are descriptive indicators, not stock-status estimates."
+#| fig-width: 8
+#| fig-height: 8
+
+p1 <- ggplot(annual_indicators, aes(year, catch_kg_standardized / 1000)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.7) +
+  labs(x = NULL, y = "Catch (t)", title = "Standardized catch") +
+  theme_minimal(base_size = 11)
+
+p2 <- ggplot(annual_indicators, aes(year, effort_days)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.7) +
+  labs(x = NULL, y = "Effort days", title = "Effort") +
+  theme_minimal(base_size = 11)
+
+p3 <- ggplot(annual_indicators, aes(year, trips_sampled)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.7) +
+  labs(x = NULL, y = "Trips sampled", title = "Sampling intensity") +
+  theme_minimal(base_size = 11)
+
+p4 <- ggplot(annual_indicators, aes(year, cpue_recalculated)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.7) +
+  labs(x = "Year", y = "Mean CPUE", title = "Mean recalculated CPUE") +
+  theme_minimal(base_size = 11)
+
+(p1 / p2 / p3 / p4)
+```
+
+The point of the four-panel view is not to infer stock status. It is to ask whether apparent changes in fishery indicators coincide with changes in the **sampling process**.
+
+## 8. Build an explicit issue register
+
+A useful QC workflow ends with an auditable record of what was found and what action is justified.
+
+```{r}
+#| label: issue-register
+
+kable(
+  issue_register,
+  col.names = c("Issue", "Records / strata", "Proposed action"),
+  caption = "Quality-control issue register for the simulated dataset."
+)
+```
+
+This is preferable to a single `clean = TRUE/FALSE` field because different problems have different scientific implications. A unit conversion may be safely reversible. An unexplained sampling gap cannot be repaired by arithmetic. A duplicate may require source-level verification. An extreme CPUE may need fishery knowledge rather than statistical deletion.
+
+## 9. What is assessment-ready at this stage?
+
+After these checks, the dataset is **better understood**, but it is not yet ready for model fitting.
+
+The following conclusions can be made:
+
+1. **Structural coverage is mostly complete**, but at least one expected sampling stratum is absent and one area-year has deliberately weak sampling intensity.
+2. **Units and categorical codes can be harmonized reproducibly** because their intended meaning is known in this example.
+3. **Duplicate observations require explicit resolution before aggregation**.
+4. **Invalid effort should not contribute to effort-derived indicators until verified**.
+5. **Reported CPUE should be reconciled with catch and effort rather than accepted uncritically**.
+6. **Extreme values require investigation, not automatic deletion**.
+7. **The monitoring-protocol change should remain visible in later exploratory work and sensitivity analysis**.
+8. **Length information has only been summarized here as mean length**. The individual length-frequency distributions and their spatial, seasonal and fleet-specific structure still need to be examined in depth.
+
+::: {.callout-note}
+## Next scientific step
+
+The next stage is not stock assessment. It is a dedicated examination of **length-frequency distributions (LFDs)**: sample sizes, binning, annual and seasonal distributions, fleet/gear effects, spatial structure, spatio-temporal combinations, pooling versus stratification, truncation, multimodality and sampling-driven changes.
+:::
+
+## Reproducibility
+
+The full simulation and quality-control logic are contained in:
+
+[`02_data_quality_checks.R`](02_data_quality_checks.R)
+
+A variable-level description and the deliberately introduced data problems are documented in:
+
+[`data-dictionary.md`](data-dictionary.md)
+
+No confidential or restricted institutional data are used in this module.

@@ -6,7 +6,7 @@ author: "Reda M. Fahim"
 
 This site accompanies the GitHub repository **fisheries-stock-assessment-r** and is being developed as a public portfolio of reproducible quantitative fisheries workflows.
 
-The objective is not to promote a single assessment method. Instead, examples are organized around the **scientific question, available information, assumptions, diagnostics, uncertainty, and management interpretation**.
+The project deliberately emphasizes the work that should happen **before model fitting**: understanding the observation process, auditing data quality, examining internal consistency, exploring biological structure and documenting uncertainty before deciding what assessment approach is defensible.
 
 ## Current modules
 
@@ -23,15 +23,28 @@ The module asks:
 
 [Open Module 01 →](01-data-exploration/index.qmd)
 
+### 02 — Data quality and consistency
+
+A richer simulated monitoring dataset is audited across year, quarter, area and fleet. The workflow examines sampling coverage, missing strata, duplicate keys, units and coding, invalid observations, internal CPUE consistency, robust outlier screening and changes in monitoring protocol.
+
+The emphasis is on **transparent issue detection and documented decisions**, not automatic deletion or premature model fitting.
+
+[Open Module 02 →](02-data-quality-consistency/index.qmd)
+
 ## Scientific principles
 
-The material developed here follows five principles:
+The material developed here follows six principles:
 
-1. **Reproducibility** — inputs, code and analytical choices should be traceable.
-2. **Transparency** — assumptions and data limitations should be explicit.
-3. **Diagnostics before conclusions** — model output should not be interpreted in isolation.
-4. **Uncertainty matters** — sensitivity and uncertainty are part of the scientific result.
-5. **Management relevance** — quantitative outputs should ultimately inform a clearly stated fisheries-management question.
+1. **Understand the data-generating process first** — sampling design and observation systems are part of the scientific problem.
+2. **Reproducibility** — inputs, code and analytical choices should be traceable.
+3. **Transparency** — assumptions, exclusions and data limitations should be explicit.
+4. **Diagnostics before conclusions** — unusual or conflicting observations should be investigated rather than hidden.
+5. **Uncertainty matters** — sensitivity and uncertainty are part of the scientific result.
+6. **Management relevance** — later quantitative outputs should ultimately inform a clearly stated fisheries-management question.
+
+## Development roadmap
+
+The next substantive work will deepen pre-assessment exploration through **length-frequency distributions, spatio-temporal and fleet/gear structure, age–length consistency and life-history information** before any stock-assessment model is introduced.
 
 ## Data policy
 
