@@ -1,0 +1,38 @@
+---
+title: "Fisheries Stock Assessment in R"
+subtitle: "Reproducible workflows for quantitative fisheries science"
+author: "Reda M. Fahim"
+---
+
+This site accompanies the GitHub repository **fisheries-stock-assessment-r** and is being developed as a public portfolio of reproducible quantitative fisheries workflows.
+
+The objective is not to promote a single assessment method. Instead, examples are organized around the **scientific question, available information, assumptions, diagnostics, uncertainty, and management interpretation**.
+
+## Current modules
+
+### 01 — Data exploration before assessment
+
+A simulated exploited stock is used to examine annual catch, fishing effort and CPUE before any formal stock-assessment model is fitted.
+
+The module asks:
+
+- What do the observed time series actually show?
+- Are trends in catch, effort and CPUE internally consistent?
+- Under what assumptions can CPUE be interpreted as a relative abundance index?
+- What should be investigated before choosing an assessment model?
+
+[Open Module 01 →](01-data-exploration/index.qmd)
+
+## Scientific principles
+
+The material developed here follows five principles:
+
+1. **Reproducibility** — inputs, code and analytical choices should be traceable.
+2. **Transparency** — assumptions and data limitations should be explicit.
+3. **Diagnostics before conclusions** — model output should not be interpreted in isolation.
+4. **Uncertainty matters** — sensitivity and uncertainty are part of the scientific result.
+5. **Management relevance** — quantitative outputs should ultimately inform a clearly stated fisheries-management question.
+
+## Data policy
+
+Examples use simulated, open, or otherwise publicly shareable data. Confidential or restricted institutional information is not published.
