@@ -1,0 +1,30 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "Fisheries Stock Assessment in R"
+  site-url: "https://redafahim-egy.github.io/fisheries-stock-assessment-r/"
+  repo-url: "https://github.com/RedaFahim-EGY/fisheries-stock-assessment-r"
+  repo-actions: [source, edit]
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: 01-data-exploration/index.qmd
+        text: "01 Data exploration"
+  page-footer:
+    left: "Reda M. Fahim"
+    right: "Built with Quarto"
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    code-fold: true
+    code-tools: true
+    link-external-newwindow: true
+
+execute:
+  warning: false
+  message: false
