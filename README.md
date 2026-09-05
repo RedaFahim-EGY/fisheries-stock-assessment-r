@@ -56,11 +56,22 @@ A richer simulated monitoring dataset is audited across year, quarter, area and 
 - [`02-data-quality-consistency/02_data_quality_checks.R`](02-data-quality-consistency/02_data_quality_checks.R)
 - [`02-data-quality-consistency/data-dictionary.md`](02-data-quality-consistency/data-dictionary.md)
 
+### 03 — Length-frequency distributions
+
+A simulated individual-level monitoring programme explores length structure across **year × month × area × fleet × gear × source** before any growth, mortality, recruitment or stock-status inference is attempted.
+
+The workflow includes record-level plausibility checks, duplicate handling, sample-size and coverage diagnostics, 1-cm LFDs, length-heaping detection, density and ridgeline-style displays, area × gear comparisons, temporal quantiles, length × year heatmaps, pooled-versus-standardized LFDs, incomplete-scope sensitivity analysis and Jensen–Shannon distributional change.
+
+- [Live Quarto module](https://redafahim-egy.github.io/fisheries-stock-assessment-r/03-length-frequency/)
+- [`03-length-frequency/index.qmd`](03-length-frequency/index.qmd)
+- [`03-length-frequency/03_length_frequency_analysis.R`](03-length-frequency/03_length_frequency_analysis.R)
+- [`03-length-frequency/data-dictionary.md`](03-length-frequency/data-dictionary.md)
+
 ## Next scientific stage
 
-The next major module will focus on **length-frequency distributions (LFDs)** in depth: sample sizes, binning, annual and seasonal structure, spatial variation, fleet/gear effects, spatio-temporal combinations, pooling versus stratification, truncation, multimodality and the distinction between biological patterns and sampling artefacts.
+The next stage will focus on **spatio-temporal consistency**: determining whether apparent changes in length structure remain when comparable spatial, seasonal and fleet/gear strata are examined separately, and identifying changes caused primarily by sampling composition or observation design.
 
-Only after the pre-assessment evidence base has been explored systematically will the repository move toward model fitting.
+Age–length consistency and life-history information will follow as later pre-assessment stages. Model fitting remains deliberately downstream of this evidence-building process.
 
 ## Reproducibility and data policy
 

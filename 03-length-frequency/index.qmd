@@ -1,0 +1,423 @@
+---
+title: "Length-frequency distributions: structure before interpretation"
+subtitle: "Sampling coverage, spatio-temporal patterns, fleet/gear effects and pooling decisions"
+author: "Reda M. Fahim"
+date: last-modified
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-tools: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+## Why LFDs deserve their own pre-assessment stage
+
+Length-frequency distributions (LFDs) are among the most informative and most easily misinterpreted fisheries data products. A change in an annual LFD can reflect population processes such as recruitment, growth, mortality or movement, but it can also arise because the sampled **area, season, fleet, gear, market component or measurement protocol changed**.
+
+This module therefore treats an LFD as the outcome of a sampling process, not as a direct picture of the stock.
+
+The example uses a fully simulated individual-fish dataset spanning 2016–2025, twelve months, three areas and four fleet/gear sampling streams. It deliberately contains uneven coverage, a missing stratum, length heaping, an incomplete measurement protocol, a small unit-entry error, duplicate fish records and a gear-selectivity change.
+
+::: {.callout-important}
+## Core principle
+
+Before comparing LFDs through time, ask whether the distributions are **comparable by design**. A shift in pooled length structure is not automatically a biological shift.
+:::
+
+## Reproducible simulated monitoring data
+
+```{r}
+#| label: setup
+
+library(ggplot2)
+library(knitr)
+library(patchwork)
+
+source("03_length_frequency_analysis.R")
+```
+
+The analysis dataset contains `r format(nrow(analysis_fish), big.mark = ",")` plausible, de-duplicated fish measurements from `r min(analysis_fish$year)` to `r max(analysis_fish$year)`.
+
+The sampling design includes:
+
+- three spatial areas: West, Central and East;
+- monthly observations aggregated later to quarter/season where useful;
+- commercial bottom trawl, gillnet and longline streams;
+- an independent survey-trawl stream;
+- genuine seasonal and spatial length structure;
+- a simulated gillnet mesh/selectivity change from 2023 onward.
+
+The deliberate observation problems are summarized below.
+
+```{r}
+#| label: quality-register
+
+kable(
+  quality_register,
+  col.names = c("Issue", "Diagnostic count", "Scientific response"),
+  caption = "Length-data issues deliberately embedded in the simulated monitoring programme."
+)
+```
+
+The register is intentionally framed around **review actions**, not automatic deletion. For example, incomplete measurement scope is not the same problem as an impossible length value: one concerns representativeness, the other concerns data validity.
+
+## 1. Start with sampling intensity, not the LFD
+
+An annual length distribution is influenced by where and when fish were measured. Sample-size tables should therefore be examined before any biological comparison.
+
+```{r}
+#| label: annual-sample-size
+
+kable(
+  sample_size_year,
+  col.names = c("Year", "Fish measured"),
+  caption = "Number of plausible, de-duplicated fish measurements by year."
+)
+```
+
+### Monthly spatial coverage
+
+```{r}
+#| label: coverage-heatmap
+#| fig-cap: "Monthly numbers of fish measured by area. Uneven intensity is part of the observation process and can change pooled LFDs."
+#| fig-width: 11
+#| fig-height: 7
+
+ggplot(sample_size_month_area, aes(month, factor(year), fill = n_fish)) +
+  geom_tile() +
+  facet_wrap(~ area, ncol = 1) +
+  scale_x_continuous(breaks = 1:12) +
+  labs(
+    x = "Month",
+    y = "Year",
+    fill = "n fish"
+  ) +
+  theme_minimal(base_size = 11)
+```
+
+The deliberately weak East coverage in 2019 is visible here. The absence of East longline samples in April–June 2020 is a **sampling gap**, not evidence that the stock or fleet was absent.
+
+### Fleet/gear composition through time
+
+```{r}
+#| label: gear-sample-size
+#| fig-cap: "Annual numbers of measured fish by gear. Changes in this composition can change a pooled annual LFD even when within-gear distributions are stable."
+#| fig-width: 9
+#| fig-height: 5
+
+ggplot(sample_size_year_gear, aes(year, n_fish, linetype = gear)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.7) +
+  labs(x = "Year", y = "Fish measured", linetype = "Gear") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top")
+```
+
+## 2. Audit the measurement process
+
+### Implausible lengths and duplicates
+
+The raw object is preserved. Plausibility and duplicate flags are created explicitly, and the analysis version is derived from those flags.
+
+```{r}
+#| label: basic-qc
+
+basic_qc <- data.frame(
+  Diagnostic = c(
+    "Raw rows",
+    "Duplicate-ID rows",
+    "Implausible lengths",
+    "Analysis rows",
+    "Rows from incomplete measurement scope"
+  ),
+  Count = c(
+    nrow(fish),
+    sum(fish$duplicate_fish_id),
+    sum(!fish$length_plausible),
+    nrow(analysis_fish),
+    sum(analysis_fish$measurement_scope != "full")
+  )
+)
+
+kable(basic_qc, caption = "Core record-level length-data checks.")
+```
+
+### Length heaping
+
+Rounding or digit preference can create artificial peaks. In this simulation, part of the 2020–2021 commercial gillnet stream was rounded to the nearest 5 cm.
+
+```{r}
+#| label: heaping-plot
+#| fig-cap: "Percentage of observations exactly on a 5-cm multiple by year and gear. A local increase can indicate measurement rounding rather than a biological mode."
+#| fig-width: 9
+#| fig-height: 5
+
+ggplot(heaping_summary, aes(year, percent_heaped, linetype = gear)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.8) +
+  labs(
+    x = "Year",
+    y = "Observations on 5-cm multiples (%)",
+    linetype = "Gear"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top")
+```
+
+::: {.callout-note}
+A heaping diagnostic is not a correction algorithm. Its purpose is to identify a feature of the measurement process that should be documented and considered when interpreting narrow modes or fitting length-based methods later.
+:::
+
+## 3. Binned LFDs remain the primary evidence
+
+Density curves are attractive and useful for comparison, but they are smoothed estimates whose appearance depends on bandwidth. For fisheries LFDs, binned frequencies remain the primary representation because the observed length-class structure is explicit.
+
+```{r}
+#| label: annual-lfd-panels
+#| fig-cap: "Annual 1-cm length-frequency distributions. Each panel is normalized within year so shape is not dominated by total sample size."
+#| fig-width: 11
+#| fig-height: 10
+
+ggplot(lfd_counts, aes(length_bin_1cm, 100 * proportion)) +
+  geom_col(width = 0.9) +
+  facet_wrap(~ year, ncol = 2) +
+  labs(
+    x = "Length class (cm)",
+    y = "Within-year frequency (%)"
+  ) +
+  theme_minimal(base_size = 10)
+```
+
+These panels reveal multimodality and truncation much more directly than a single annual mean length. They also expose suspiciously sharp peaks that should be compared with the heaping diagnostic.
+
+## 4. Density plots are complementary, not replacements
+
+### Ridgeline-style annual comparison
+
+The following display uses kernel densities to make temporal shifts visually compact. The ridges are calculated with base R and plotted with ggplot2 so no additional visualization package is required.
+
+```{r}
+#| label: density-ridges
+#| fig-cap: "Ridgeline-style kernel densities by year. These are useful for visual comparison but should be interpreted alongside the binned LFDs because smoothing can hide or create apparent modes."
+#| fig-width: 10
+#| fig-height: 7
+
+ggplot(density_by_year, aes(length_cm, ridge_y, group = factor(year), fill = factor(year))) +
+  geom_ribbon(aes(ymin = baseline, ymax = ridge_y), alpha = 0.35, show.legend = FALSE) +
+  geom_line(linewidth = 0.45, show.legend = FALSE) +
+  scale_y_continuous(
+    breaks = seq_along(years),
+    labels = years
+  ) +
+  labs(x = "Length (cm)", y = "Year") +
+  theme_minimal(base_size = 12)
+```
+
+The polished display is useful precisely because the raw-frequency panels are available next to it. A density-only workflow would be less defensible.
+
+## 5. Spatio-temporal and gear-specific structure
+
+Pooling all fish assumes that the mix of sampling streams is irrelevant. That assumption can be checked rather than accepted.
+
+### Recent density by area and gear
+
+```{r}
+#| label: area-gear-density
+#| fig-cap: "Kernel-density comparison by area and gear for 2023–2025. Differences can reflect spatial population structure, gear selectivity, or both."
+#| fig-width: 11
+#| fig-height: 9
+
+ggplot(recent_density, aes(length_cm, density, linetype = gear)) +
+  geom_line(linewidth = 0.8) +
+  facet_wrap(~ area, ncol = 1, scales = "free_y") +
+  labs(
+    x = "Length (cm)",
+    y = "Density",
+    linetype = "Gear"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "top")
+```
+
+A gear difference that persists within the same area is evidence that pooled LFDs may partly reflect **selectivity**. A spatial difference that persists across gears may instead suggest genuine spatial structure, although sampling design still has to be considered.
+
+### Quantile trajectories by gear
+
+```{r}
+#| label: gear-quantiles
+#| fig-cap: "Median length by year and gear, with the interquartile range shown as vertical intervals."
+#| fig-width: 10
+#| fig-height: 6
+
+ggplot(gear_quantiles, aes(year, median, linetype = gear)) +
+  geom_linerange(aes(ymin = p25, ymax = p75), linewidth = 0.35) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.6) +
+  labs(
+    x = "Year",
+    y = "Length (cm)",
+    linetype = "Gear"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top")
+```
+
+The simulated gillnet change after 2023 is visible as a selectivity-driven shift. Interpreting that shift as population growth or improved stock condition would therefore be incorrect.
+
+## 6. Length × year heatmaps reveal persistent structure
+
+```{r}
+#| label: pooled-heatmap
+#| fig-cap: "Pooled annual LFD heatmap. Bright bands highlight dominant length classes and cohort-like progression, but the result still reflects annual sampling composition."
+#| fig-width: 10
+#| fig-height: 6
+
+p_pooled <- ggplot(lfd_counts, aes(year, length_bin_1cm, fill = proportion)) +
+  geom_tile() +
+  labs(
+    x = "Year",
+    y = "Length class (cm)",
+    fill = "Proportion",
+    title = "Pooled annual LFD"
+  ) +
+  theme_minimal(base_size = 11)
+
+p_pooled
+```
+
+Heatmaps are particularly useful for identifying whether a mode progresses gradually through adjacent length classes or appears abruptly with a change in sampling design.
+
+## 7. Pooling versus composition standardization
+
+An annual pooled LFD weights strata according to the number of fish measured. If one gear or area is sampled more heavily in one year, its length structure contributes more strongly to the annual distribution.
+
+To demonstrate the consequence, the simulation also creates an **equal-stratum standardized LFD**. Persistent area × gear × source strata are first converted to within-stratum proportions and then averaged with equal weight within year.
+
+```{r}
+#| label: pooling-comparison
+#| fig-cap: "Pooled versus equal-stratum standardized annual LFDs. Differences between panels indicate that changing sampling composition contributes to the apparent temporal pattern."
+#| fig-width: 12
+#| fig-height: 6
+
+p_balanced <- ggplot(balanced_lfd, aes(year, length_bin_1cm, fill = proportion)) +
+  geom_tile() +
+  labs(
+    x = "Year",
+    y = "Length class (cm)",
+    fill = "Proportion",
+    title = "Equal-stratum standardized LFD"
+  ) +
+  theme_minimal(base_size = 11)
+
+p_pooled + p_balanced
+```
+
+This is not presented as the uniquely correct weighting scheme. It is a **diagnostic sensitivity comparison**. Real standardization should reflect the survey/fishery design, raising factors, sampling probabilities and intended estimand.
+
+::: {.callout-warning}
+## Do not solve composition problems by arbitrary weighting
+
+Equal-stratum weighting is useful here because the simulation makes the mechanism explicit. In real monitoring data, design weights, catch/landing weights, swept-area weights or other raising procedures may be required. The correct target must be defined before choosing weights.
+:::
+
+## 8. Incomplete measurement scope: sensitivity analysis
+
+The 2022 West bottom-trawl stream contains a period where fish below 22 cm were not measured. Those records are plausible lengths, but the resulting distribution is incomplete.
+
+```{r}
+#| label: scope-sensitivity
+#| fig-cap: "The 2022 LFD with all plausible records compared with a sensitivity version excluding samples known to have marketable-only measurement scope."
+#| fig-width: 9
+#| fig-height: 5
+
+scope_compare <- merge(
+  lfd_counts[lfd_counts$year == 2022, c("length_bin_1cm", "proportion")],
+  lfd_full_scope[lfd_full_scope$year == 2022, c("length_bin_1cm", "proportion")],
+  by = "length_bin_1cm",
+  all = TRUE,
+  suffixes = c("_all", "_full")
+)
+scope_compare[is.na(scope_compare)] <- 0
+scope_long <- rbind(
+  data.frame(
+    length_bin_1cm = scope_compare$length_bin_1cm,
+    proportion = scope_compare$proportion_all,
+    version = "All plausible records"
+  ),
+  data.frame(
+    length_bin_1cm = scope_compare$length_bin_1cm,
+    proportion = scope_compare$proportion_full,
+    version = "Full-scope events only"
+  )
+)
+
+ggplot(scope_long, aes(length_bin_1cm, 100 * proportion, linetype = version)) +
+  geom_line(linewidth = 0.9) +
+  labs(
+    x = "Length class (cm)",
+    y = "Frequency (%)",
+    linetype = NULL
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top")
+```
+
+This distinction is critical: plausible observations can still be **non-representative observations**.
+
+## 9. Quantify distributional change, but do not interpret it automatically
+
+Jensen–Shannon divergence provides a symmetric measure of how different two probability distributions are. Here it is calculated for consecutive pooled annual LFDs.
+
+```{r}
+#| label: js-change
+#| fig-cap: "Jensen–Shannon divergence between consecutive pooled annual LFDs. Peaks identify years that deserve investigation; they do not identify the biological cause of change."
+#| fig-width: 9
+#| fig-height: 4.8
+
+ggplot(js_year_to_year, aes(year_to, js_divergence)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 2) +
+  labs(
+    x = "Later year",
+    y = "Jensen–Shannon divergence"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+A divergence peak should send the analyst back to the coverage, gear, spatial and measurement diagnostics before it is labelled recruitment, mortality, growth or migration.
+
+## 10. A practical hierarchy for LFD interpretation
+
+A defensible LFD workflow can be organized in the following order:
+
+1. **Validate individual measurements** — units, ranges, duplicates, precision and rounding.
+2. **Audit sample size and coverage** — year, season/month, area, fleet, gear and source.
+3. **Identify incomplete or changing sampling protocols** — marketable-only samples, mesh changes, survey redesigns and similar breaks.
+4. **Plot binned frequencies first** — examine modes, truncation, gaps and sample-size sensitivity.
+5. **Use density plots as complementary comparisons** — never forget bandwidth dependence.
+6. **Stratify before pooling** — compare area × time × fleet/gear combinations.
+7. **Test sensitivity to composition and weighting** — pooled versus design-aware or standardized distributions.
+8. **Quantify distributional change only after comparability checks**.
+9. **Carry unresolved inconsistencies forward explicitly** rather than hiding them before later analyses.
+
+## What this module does not claim
+
+No cohort is formally tracked. No recruitment index is estimated. No selectivity curve is fitted. No mortality, growth or stock status is inferred.
+
+Those analyses would require additional assumptions. The purpose here is to establish whether the length evidence is internally coherent enough to support them.
+
+## Reproducibility
+
+The complete simulation, quality-control logic, LFD construction, standardization and distributional diagnostics are available in:
+
+[`03_length_frequency_analysis.R`](03_length_frequency_analysis.R)
+
+The dataset is generated reproducibly from code and is entirely simulated.
+
+## Next scientific stage
+
+The next module should build directly on these findings by examining **spatio-temporal consistency** more formally: distinguishing shifts caused by changing coverage or fleet/gear composition from patterns that persist within comparable strata. Age–length consistency and life-history information remain later pre-assessment stages, still before model fitting.

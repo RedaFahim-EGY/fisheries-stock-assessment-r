@@ -31,6 +31,14 @@ The emphasis is on **transparent issue detection and documented decisions**, not
 
 [Open Module 02 →](02-data-quality-consistency/index.qmd)
 
+### 03 — Length-frequency distributions
+
+An individual-level simulated monitoring programme is used to examine LFDs across year, month, area, fleet, gear and source. The module combines record-level QC, sample-size diagnostics, binned LFDs, density and ridgeline-style comparisons, length × year heatmaps, area × gear contrasts, pooling-versus-standardization diagnostics, heaping checks and sensitivity to incomplete measurement scope.
+
+The central question is not simply *what shape does the LFD have?* but **whether the distributions being compared are genuinely comparable by design**.
+
+[Open Module 03 →](03-length-frequency/index.qmd)
+
 ## Scientific principles
 
 The material developed here follows six principles:
@@ -44,7 +52,7 @@ The material developed here follows six principles:
 
 ## Development roadmap
 
-The next substantive work will deepen pre-assessment exploration through **length-frequency distributions, spatio-temporal and fleet/gear structure, age–length consistency and life-history information** before any stock-assessment model is introduced.
+The next substantive work will move from descriptive LFD structure toward **formal spatio-temporal consistency checks**, asking whether observed differences persist within comparable area × season × fleet/gear strata or are largely explained by changing sampling composition. Age–length consistency and life-history information remain later pre-assessment stages, still before any stock-assessment model is introduced.
 
 ## Data policy
 
