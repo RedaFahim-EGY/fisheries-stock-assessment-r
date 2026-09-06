@@ -1,0 +1,363 @@
+---
+title: "Spatio-temporal consistency: like-with-like before interpretation"
+subtitle: "Separating biological signals from sampling composition, season, area and gear effects"
+author: "Reda M. Fahim"
+date: last-modified
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-tools: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+## Why spatio-temporal consistency comes before assessment
+
+A pooled annual length distribution can change even when the underlying population signal has not changed uniformly. The sampled **areas, seasons, gears, fleets and data sources** may contribute different proportions from year to year, and each of those strata can have a different expected length structure.
+
+Module 03 showed that pooling can be misleading. This module takes the next step: it asks whether apparent temporal changes remain when observations are compared **like with like**.
+
+The analysis reuses the fully simulated individual-fish monitoring programme from Module 03. Known incomplete measurement-scope samples are excluded from the baseline consistency analysis, but the remaining spatial, seasonal and gear structure is retained.
+
+::: {.callout-important}
+## Core question
+
+If an apparent annual change disappears when the same area × season × gear × source strata are compared through time, the original signal may be driven more by **sampling composition** than by a stock-wide biological process.
+:::
+
+## Reproducible setup
+
+```{r}
+#| label: setup
+
+library(ggplot2)
+library(knitr)
+library(patchwork)
+
+source("04_spatiotemporal_consistency.R")
+```
+
+The baseline contains `r format(nrow(consistency_fish), big.mark = ",")` plausible, de-duplicated, full-scope fish observations across `r length(unique(consistency_fish$year))` years. The design-aware comparison retains `r length(persistent_strata)` persistent strata with at least `r min_n_per_year` fish in every year.
+
+```{r}
+#| label: audit-summary
+
+kable(
+  consistency_audit,
+  col.names = c("Diagnostic", "Value", "Interpretation"),
+  caption = "Compact audit of the spatio-temporal consistency exercise."
+)
+```
+
+## 1. Sampling composition is itself a time series
+
+Before interpreting a biological trend, examine whether the monitoring design changed. The share of observations contributed by each area can shift substantially even when total annual sample size appears adequate.
+
+```{r}
+#| label: area-composition
+#| fig-cap: "Annual share of measured fish contributed by each spatial area."
+#| fig-width: 8
+#| fig-height: 4.8
+
+ggplot(area_year_n, aes(year, share, fill = area)) +
+  geom_area(position = "stack") +
+  scale_y_continuous(labels = function(x) paste0(round(100 * x), "%")) +
+  labs(x = "Year", y = "Share of measured fish", fill = "Area") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top")
+```
+
+A similar problem can occur through changing gear composition.
+
+```{r}
+#| label: gear-composition
+#| fig-cap: "Annual share of measured fish contributed by each gear."
+#| fig-width: 8
+#| fig-height: 4.8
+
+ggplot(gear_year_n, aes(year, share, fill = gear)) +
+  geom_area(position = "stack") +
+  scale_y_continuous(labels = function(x) paste0(round(100 * x), "%")) +
+  labs(x = "Year", y = "Share of measured fish", fill = "Gear") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top")
+```
+
+These figures are not nuisance diagnostics. They describe the **observation process** that generated the pooled annual LFD.
+
+## 2. Quantify design drift
+
+The annual sampling composition is represented across area × season × gear × source cells. Jensen–Shannon divergence is used here only as a descriptive measure of how far each year's sampling composition lies from the long-term reference composition.
+
+```{r}
+#| label: design-drift
+#| fig-cap: "Divergence of each year's sampling composition from the long-term reference design. Higher values indicate greater design drift."
+#| fig-width: 8
+#| fig-height: 4.5
+
+ggplot(design_drift, aes(year, js_divergence)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 2) +
+  labs(x = "Year", y = "Jensen–Shannon divergence") +
+  theme_minimal(base_size = 12)
+```
+
+::: {.callout-note}
+Jensen–Shannon divergence here measures **change in sampling composition**, not ecological distance and not stock status. Its value is diagnostic: years with unusual monitoring composition deserve extra caution when pooled biological summaries also move.
+:::
+
+## 3. Pooled versus fixed-design annual mean length
+
+The pooled mean gives every fish equal weight, which implicitly gives more influence to strata sampled more intensively in a given year. A fixed-design standardized mean instead applies the same long-term reference weights to persistent strata in every year.
+
+```{r}
+#| label: pooled-standardized
+#| fig-cap: "Pooled annual mean length compared with a fixed-design standardized mean based on persistent area × season × gear × source strata."
+#| fig-width: 8
+#| fig-height: 5
+
+plot_annual <- data.frame(
+  year = rep(annual_comparison$year, 2),
+  series = rep(c("Pooled", "Fixed-design standardized"), each = nrow(annual_comparison)),
+  mean_length_cm = c(
+    annual_comparison$pooled_mean_cm,
+    annual_comparison$standardized_mean_cm
+  )
+)
+
+ggplot(plot_annual, aes(year, mean_length_cm, linetype = series)) +
+  geom_line(linewidth = 0.9) +
+  geom_point(size = 2) +
+  labs(x = "Year", y = "Mean length (cm)", linetype = NULL) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top")
+```
+
+The difference between the two curves is not a correction for all forms of bias. It is a **sensitivity diagnostic** showing how much annual summaries can move when the mixture of sampled strata changes.
+
+```{r}
+#| label: composition-bias
+#| fig-cap: "Difference between pooled and fixed-design standardized annual mean length."
+#| fig-width: 8
+#| fig-height: 4.5
+
+ggplot(annual_comparison, aes(year, composition_bias_cm)) +
+  geom_hline(yintercept = 0, linewidth = 0.4) +
+  geom_col() +
+  labs(x = "Year", y = "Pooled − standardized mean (cm)") +
+  theme_minimal(base_size = 12)
+```
+
+Across this simulation, the correlation between annual design divergence and the absolute pooled-versus-standardized discrepancy is `r round(design_bias_correlation, 2)`. This is descriptive and specific to the simulated monitoring process; it is not a general threshold or inferential test.
+
+## 4. Remove stable stratum differences before asking about time
+
+Some strata are consistently larger or smaller because of spatial structure, seasonality or selectivity. To focus on temporal coherence, each stratum's long-term mean is subtracted from its annual mean.
+
+```{r}
+#| label: area-anomalies
+#| fig-cap: "Annual mean-length anomalies by area after removing each persistent stratum's long-term average."
+#| fig-width: 8
+#| fig-height: 5
+
+ggplot(area_year_anomaly, aes(year, within_stratum_anomaly, linetype = area)) +
+  geom_hline(yintercept = 0, linewidth = 0.4) +
+  geom_line(linewidth = 0.9) +
+  geom_point(size = 2) +
+  labs(x = "Year", y = "Within-stratum anomaly (cm)", linetype = "Area") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top")
+```
+
+If all areas move in the same direction after this matching step, a common temporal signal becomes more plausible. If they diverge, a single pooled trend is harder to interpret biologically.
+
+The pairwise correlations of area-level anomalies are:
+
+```{r}
+#| label: area-synchrony-table
+
+kable(
+  area_synchrony_table,
+  digits = 2,
+  col.names = c("Area comparison", "Correlation"),
+  caption = "Synchrony of annual within-stratum mean-length anomalies among areas."
+)
+```
+
+Correlation is used as a descriptive consistency metric only. With ten annual observations, it should not be treated as strong statistical evidence by itself.
+
+## 5. Gear-specific consistency can reveal observation changes
+
+Module 03 deliberately introduced a gillnet selectivity change from 2023. A useful consistency check is therefore whether the post-2023 shift is shared among gears or concentrated in gillnet observations.
+
+```{r}
+#| label: gear-anomalies
+#| fig-cap: "Annual within-stratum mean-length anomalies by gear. A gear-specific departure can indicate a selectivity or observation-process change rather than a stock-wide signal."
+#| fig-width: 8
+#| fig-height: 5
+
+ggplot(gear_year_anomaly, aes(year, within_stratum_anomaly, linetype = gear)) +
+  geom_hline(yintercept = 0, linewidth = 0.4) +
+  geom_vline(xintercept = 2023, linetype = 3, linewidth = 0.5) +
+  geom_line(linewidth = 0.9) +
+  geom_point(size = 1.8) +
+  labs(x = "Year", y = "Within-stratum anomaly (cm)", linetype = "Gear") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top")
+```
+
+```{r}
+#| label: gear-shift-table
+
+kable(
+  gear_shift,
+  digits = 2,
+  col.names = c("Gear", "Mean anomaly 2016–2022", "Mean anomaly 2023–2025", "Shift (cm)"),
+  caption = "Gear-specific change in mean within-stratum anomaly before and after the simulated 2023 selectivity change."
+)
+```
+
+This is exactly why fleet and gear information should be retained deep into exploratory analysis. Pooling them too early can turn a selectivity change into an apparent biological trend.
+
+## 6. Do comparable strata change in the same direction?
+
+A useful complement to average trends is to examine **directional agreement**. For each year, the annual mean-length change is calculated separately within every persistent stratum.
+
+```{r}
+#| label: directional-consistency
+#| fig-cap: "Share of persistent strata with positive and negative year-to-year changes in mean length."
+#| fig-width: 8
+#| fig-height: 5
+
+change_long <- rbind(
+  data.frame(
+    year = annual_change_consistency$year,
+    direction = "Positive",
+    share = annual_change_consistency$share_positive
+  ),
+  data.frame(
+    year = annual_change_consistency$year,
+    direction = "Negative",
+    share = annual_change_consistency$share_negative
+  )
+)
+
+ggplot(change_long, aes(year, share, linetype = direction)) +
+  geom_hline(yintercept = 0.5, linewidth = 0.4) +
+  geom_line(linewidth = 0.9) +
+  geom_point(size = 2) +
+  scale_y_continuous(labels = function(x) paste0(round(100 * x), "%"), limits = c(0, 1)) +
+  labs(x = "Year", y = "Share of persistent strata", linetype = NULL) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top")
+```
+
+A pooled decline is much more convincing as a broad biological signal when many comparable strata decline together. Conversely, a pooled shift accompanied by mixed within-stratum directions suggests heterogeneity or composition effects that deserve investigation.
+
+The median and interquartile range of the matched-stratum annual changes are shown below.
+
+```{r}
+#| label: delta-distribution
+#| fig-cap: "Median and interquartile range of year-to-year mean-length changes across persistent strata."
+#| fig-width: 8
+#| fig-height: 4.8
+
+ggplot(annual_change_consistency, aes(year, median_delta_cm)) +
+  geom_hline(yintercept = 0, linewidth = 0.4) +
+  geom_ribbon(aes(ymin = q25_delta_cm, ymax = q75_delta_cm), alpha = 0.2) +
+  geom_line(linewidth = 0.9) +
+  geom_point(size = 2) +
+  labs(x = "Year", y = "Annual change in mean length (cm)") +
+  theme_minimal(base_size = 12)
+```
+
+## 7. Spatial contrasts should also be matched
+
+Differences among areas are estimated here only within the same year × season × gear × source cells. This prevents, for example, a West-versus-East difference from merely reflecting different gear mixtures.
+
+```{r}
+#| label: spatial-contrasts
+#| fig-cap: "Median matched spatial contrasts in mean length through time."
+#| fig-width: 8
+#| fig-height: 5
+
+spatial_long <- rbind(
+  data.frame(year = spatial_contrast_year$year, contrast = "West − East", value = spatial_contrast_year$west_minus_east_cm),
+  data.frame(year = spatial_contrast_year$year, contrast = "West − Central", value = spatial_contrast_year$west_minus_central_cm),
+  data.frame(year = spatial_contrast_year$year, contrast = "Central − East", value = spatial_contrast_year$central_minus_east_cm)
+)
+
+ggplot(spatial_long, aes(year, value, linetype = contrast)) +
+  geom_hline(yintercept = 0, linewidth = 0.4) +
+  geom_line(linewidth = 0.9) +
+  geom_point(size = 1.8) +
+  labs(x = "Year", y = "Matched mean-length contrast (cm)", linetype = NULL) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top")
+```
+
+Persistent spatial contrasts may be biologically real, but they also warn against assuming that a change in spatial sampling coverage is harmless.
+
+## 8. Does one area dominate the standardized trend?
+
+A leave-one-area-out diagnostic recalculates the mean within-stratum anomaly after excluding each area in turn.
+
+```{r}
+#| label: leave-one-area
+#| fig-cap: "Leave-one-area-out sensitivity of the standardized annual mean-length anomaly."
+#| fig-width: 8
+#| fig-height: 5
+
+ggplot(leave_one_area_out, aes(year, mean_anomaly_cm, linetype = omitted_area)) +
+  geom_hline(yintercept = 0, linewidth = 0.4) +
+  geom_line(linewidth = 0.85) +
+  geom_point(size = 1.6) +
+  labs(x = "Year", y = "Mean within-stratum anomaly (cm)", linetype = "Area omitted") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top")
+```
+
+Large changes after removing one area would indicate that the apparent annual signal is spatially concentrated rather than broadly supported.
+
+## What this module does — and does not — establish
+
+These diagnostics help distinguish several situations that can look similar in pooled data:
+
+1. **Broadly coherent temporal change** — many comparable strata move together.
+2. **Spatially heterogeneous change** — areas show different temporal trajectories.
+3. **Gear-specific change** — selectivity or fleet behaviour changes one observation stream.
+4. **Composition-driven change** — pooled summaries move because the sampled mixture changes.
+5. **Sparse or incomplete support** — the apparent signal relies on poorly represented strata.
+
+None of those diagnoses is itself a stock assessment. They determine what information can be compared defensibly and what caveats must accompany later analyses.
+
+::: {.callout-warning}
+## Do not standardize blindly
+
+A standardized series is not automatically “correct.” The chosen strata and weights must reflect the sampling design and scientific question. Standardization can remove design artefacts, but it can also remove real changes if the stratification is inappropriate. Raw, pooled and standardized views should therefore be retained together.
+:::
+
+## Assessment-readiness implications
+
+Before moving to age or life-history information, this workflow would document:
+
+- which area × season × gear × source strata are persistent and comparable;
+- where monitoring composition changes materially through time;
+- whether pooled and fixed-design summaries agree;
+- whether temporal changes are synchronous across areas;
+- whether a signal is concentrated in one gear or spatial component;
+- whether year-to-year changes are directionally consistent among matched strata;
+- which spatial contrasts persist after matching season, gear and source.
+
+The next pre-assessment stage should examine **age–length consistency**: whether age assignments, age-length keys, sampling intensity by age and length, and temporal/spatial age structure are internally coherent with the length information already audited here.
+
+## Reproducibility
+
+The full analysis is available in:
+
+[`04_spatiotemporal_consistency.R`](04_spatiotemporal_consistency.R)
+
+It reuses the simulated Module 03 dataset and introduces no confidential or restricted information.

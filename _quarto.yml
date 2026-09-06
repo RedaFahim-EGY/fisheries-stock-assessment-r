@@ -17,6 +17,8 @@ website:
         text: "02 Data quality"
       - href: 03-length-frequency/index.qmd
         text: "03 Length frequencies"
+      - href: 04-spatiotemporal-consistency/index.qmd
+        text: "04 Spatio-temporal"
   page-footer:
     left: "Reda M. Fahim"
     right: "Built with Quarto"

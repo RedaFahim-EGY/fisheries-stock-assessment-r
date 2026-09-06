@@ -39,6 +39,14 @@ The central question is not simply *what shape does the LFD have?* but **whether
 
 [Open Module 03 →](03-length-frequency/index.qmd)
 
+### 04 — Spatio-temporal consistency
+
+The same simulated length-monitoring programme is re-examined using persistent **area × season × gear × source** strata. The module quantifies sampling-design drift, compares pooled and fixed-design annual length summaries, measures within-stratum anomalies, checks directional agreement among strata, examines spatial synchrony, isolates gear-specific changes and uses leave-one-area-out sensitivity to identify spatial dominance.
+
+The key question is whether an apparent annual change remains after observations are compared **like with like**.
+
+[Open Module 04 →](04-spatiotemporal-consistency/index.qmd)
+
 ## Scientific principles
 
 The material developed here follows six principles:
@@ -52,7 +60,7 @@ The material developed here follows six principles:
 
 ## Development roadmap
 
-The next substantive work will move from descriptive LFD structure toward **formal spatio-temporal consistency checks**, asking whether observed differences persist within comparable area × season × fleet/gear strata or are largely explained by changing sampling composition. Age–length consistency and life-history information remain later pre-assessment stages, still before any stock-assessment model is introduced.
+The next pre-assessment stage will focus on **age–length consistency**: age composition, age-length keys, sample support by age and length, temporal/spatial stability, and checks for biological or ageing inconsistencies. Life-history information will follow after that. Stock-assessment model fitting remains deliberately downstream of these evidence-building stages.
 
 ## Data policy
 

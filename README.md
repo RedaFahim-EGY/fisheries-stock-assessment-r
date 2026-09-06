@@ -67,11 +67,22 @@ The workflow includes record-level plausibility checks, duplicate handling, samp
 - [`03-length-frequency/03_length_frequency_analysis.R`](03-length-frequency/03_length_frequency_analysis.R)
 - [`03-length-frequency/data-dictionary.md`](03-length-frequency/data-dictionary.md)
 
+### 04 — Spatio-temporal consistency
+
+The Module 03 monitoring programme is re-examined within persistent **area × season × gear × source** strata to determine whether apparent annual changes survive like-for-like comparison.
+
+The workflow includes sampling-composition diagnostics, Jensen–Shannon design drift, pooled versus fixed-design annual mean length, within-stratum temporal anomalies, area synchrony, gear-specific departures, directional agreement among strata, matched spatial contrasts and leave-one-area-out sensitivity.
+
+- [Live Quarto module](https://redafahim-egy.github.io/fisheries-stock-assessment-r/04-spatiotemporal-consistency/)
+- [`04-spatiotemporal-consistency/index.qmd`](04-spatiotemporal-consistency/index.qmd)
+- [`04-spatiotemporal-consistency/04_spatiotemporal_consistency.R`](04-spatiotemporal-consistency/04_spatiotemporal_consistency.R)
+- [`04-spatiotemporal-consistency/data-dictionary.md`](04-spatiotemporal-consistency/data-dictionary.md)
+
 ## Next scientific stage
 
-The next stage will focus on **spatio-temporal consistency**: determining whether apparent changes in length structure remain when comparable spatial, seasonal and fleet/gear strata are examined separately, and identifying changes caused primarily by sampling composition or observation design.
+The next stage will focus on **age–length consistency**: sample support across age and length, age composition, age-length keys, temporal and spatial coherence, and checks for biological implausibility or ageing artefacts.
 
-Age–length consistency and life-history information will follow as later pre-assessment stages. Model fitting remains deliberately downstream of this evidence-building process.
+Life-history information will follow as a later pre-assessment stage. Model fitting remains deliberately downstream of this evidence-building process.
 
 ## Reproducibility and data policy
 
