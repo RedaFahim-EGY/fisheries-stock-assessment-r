@@ -19,6 +19,8 @@ website:
         text: "03 Length frequencies"
       - href: 04-spatiotemporal-consistency/index.qmd
         text: "04 Spatio-temporal"
+      - href: 05-age-length-consistency/index.qmd
+        text: "05 Age–length"
   page-footer:
     left: "Reda M. Fahim"
     right: "Built with Quarto"

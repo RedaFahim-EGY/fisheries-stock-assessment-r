@@ -1,0 +1,170 @@
+---
+title: "05 — Age–length consistency"
+subtitle: "Are age data biologically coherent and transferable across the monitoring design?"
+author: "Reda M. Fahim"
+format:
+  html:
+    toc: true
+    code-fold: true
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+source("05_age_length_consistency.R")
+library(ggplot2)
+```
+
+Age data are often treated as if an assigned age were simply another observed variable. In practice, ageing introduces its own sampling design, reader error, sparse support at older ages and potential incompatibility between age–length keys (ALKs) and the samples to which they are applied.
+
+This module therefore asks a pre-assessment question: **are the age observations internally coherent, biologically plausible and supported strongly enough to be used beyond the strata in which they were collected?**
+
+The dataset is entirely simulated and deliberately contains realistic problems: duplicate fish IDs, a length-unit error, an impossible age code, suspicious age–length combinations, highly uneven ageing effort, reader disagreement that increases with age, and a simulated reader drift in 2024–2025.
+
+## 1. Record-level QC before any age analysis
+
+```{r}
+knitr::kable(issue_register, digits = 3,
+             caption = "Explicit age-data issue register")
+```
+
+The key principle is that unusual age observations are **flagged for review rather than silently deleted**. A large fish assigned age 0 or a very small fish assigned age 8 may be a real extreme observation, an ageing error, a transcription problem or a sample mismatch; the workflow preserves that distinction.
+
+## 2. Is ageing effort balanced across the design?
+
+```{r, fig.height=5.5}
+p1 <- ggplot(stratum_support,
+             aes(year, n_aged, group = interaction(area, source),
+                 linetype = source)) +
+  geom_line(alpha = 0.55) +
+  geom_point(aes(shape = weak_support), size = 1.7) +
+  facet_grid(gear ~ area) +
+  labs(x = NULL, y = "Fish aged",
+       title = "Ageing effort is uneven across year × area × gear × source",
+       subtitle = "Filled support should be assessed before constructing or transferring ALKs") +
+  theme_minimal(base_size = 11)
+p1
+```
+
+Sparse strata matter because an ALK estimated from a small or compositionally unusual sample can appear precise simply because little information is available. Older ages are particularly vulnerable because sample support typically declines in the tail.
+
+```{r, fig.height=5}
+ggplot(age_support, aes(year, age, fill = n)) +
+  geom_tile() +
+  scale_fill_viridis_c() +
+  labs(x = NULL, y = "Assigned age", fill = "n",
+       title = "Age support through time",
+       subtitle = "Empty or weak cells constrain age-composition interpretation") +
+  theme_minimal(base_size = 11)
+```
+
+## 3. Does length increase coherently with assigned age?
+
+```{r, fig.height=5.5}
+ggplot(valid, aes(factor(age_reader1), length_cm)) +
+  geom_boxplot(outlier.alpha = 0.15, width = 0.65) +
+  geom_point(data = valid[valid$age_length_outlier, ],
+             aes(factor(age_reader1), length_cm), size = 1.8) +
+  labs(x = "Assigned age (reader 1)", y = "Length (cm)",
+       title = "Length-at-age distributions and robust outlier flags",
+       subtitle = "Overlap is expected; biologically implausible combinations require review") +
+  theme_minimal(base_size = 11)
+```
+
+```{r}
+knitr::kable(mean_la, digits = 2,
+             caption = "Mean length-at-age and adjacent-age monotonicity check")
+```
+
+A monotonic increase in mean length-at-age is not a formal proof that the ageing is correct. Conversely, some overlap among adjacent ages is biologically expected. The useful diagnostic is whether the **joint pattern** is plausible and stable, and whether isolated combinations are driving apparent anomalies.
+
+## 4. Reader agreement and possible calibration drift
+
+```{r}
+knitr::kable(reader_summary, digits = 3,
+             caption = "Paired-reader agreement summary")
+knitr::kable(agreement_by_period, digits = 3,
+             caption = "Reader difference before and during the simulated drift period")
+```
+
+```{r, fig.height=4.8}
+ggplot(agreement_by_age,
+       aes(age_reader2, exact_agreement)) +
+  geom_line() + geom_point(aes(size = n)) +
+  scale_y_continuous(limits = c(0, 1)) +
+  labs(x = "Age assigned by reader 2", y = "Exact agreement",
+       size = "Paired reads",
+       title = "Reader agreement varies with age",
+       subtitle = "Older ages can be both less abundant and less precisely read") +
+  theme_minimal(base_size = 11)
+```
+
+The simulated 2024–2025 drift is intentionally subtle. The objective is to demonstrate why reader agreement should be monitored **through time**, rather than summarized once across the full series. A stable overall percentage agreement can hide a recent systematic shift.
+
+## 5. Age–length key support
+
+```{r, fig.height=5.2}
+alk_plot <- alk_all[alk_all$n_length > 0 & alk_all$p_age_given_length > 0, ]
+ggplot(alk_plot, aes(length_bin, age, fill = p_age_given_length)) +
+  geom_tile() +
+  scale_fill_viridis_c() +
+  labs(x = "2-cm length bin", y = "Assigned age",
+       fill = "P(age | length)",
+       title = "Pooled age–length key",
+       subtitle = "A smooth-looking ALK can still contain weakly supported length bins") +
+  theme_minimal(base_size = 11)
+```
+
+```{r}
+knitr::kable(alk_support[alk_support$weak_bin, ],
+             caption = "Length bins with fewer than 25 aged fish")
+```
+
+The pooled ALK is visually attractive, but pooling is not automatically defensible. If age-at-length differs among areas, sources, seasons or years, a single ALK can average across real biological or observation-process differences.
+
+## 6. Can an old ALK be transferred to later years?
+
+To make that question testable, the workflow estimates ALKs from **2016–2020** and applies them to fish aged in **2021–2025**. It compares a single global ALK with ALKs stratified by area and source.
+
+```{r}
+knitr::kable(transfer_summary, digits = 3,
+             caption = "Out-of-period ALK transfer diagnostic")
+```
+
+The purpose is not to declare one universal best ALK design. It is to show that transferability itself should be evaluated. A historical ALK can fail because growth, spatial composition, selectivity, ageing practice or sampling design changed.
+
+## 7. Temporal stability of length-at-age
+
+```{r, fig.height=5.5}
+plot_la <- la_year[la_year$age_reader1 %in% 1:7, ]
+ggplot(plot_la, aes(year, deviation_cm, group = factor(age_reader1))) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  geom_line(aes(linetype = factor(age_reader1))) +
+  geom_point() +
+  labs(x = NULL, y = "Deviation from 2016–2020 mean length-at-age (cm)",
+       linetype = "Age",
+       title = "Temporal coherence of length-at-age",
+       subtitle = "Persistent age-specific shifts may indicate biology, selectivity or ageing changes") +
+  theme_minimal(base_size = 11)
+```
+
+This diagnostic should be interpreted alongside the reader results. A change in observed length-at-age is not automatically evidence of growth variation; it can arise from fleet selectivity, spatial composition, ageing drift or sparse sample support.
+
+## 8. Assessment-readiness interpretation
+
+Before age composition or ALKs are used in an assessment, this workflow would require evidence that:
+
+- fish identifiers, units and age codes have passed record-level QC;
+- ageing effort is adequate in the length, age and design strata being represented;
+- length-at-age patterns are biologically plausible and not dominated by isolated anomalies;
+- reader agreement and bias are quantified, preferably through time;
+- ALK support is visible rather than hidden by pooled proportions;
+- temporal or spatial transfer of an ALK is tested rather than assumed;
+- changes in age structure are considered jointly with sampling design and ageing practice.
+
+The output of this module is therefore **not an age-based stock assessment**. It is a documented judgement about whether the age information is sufficiently coherent for later analytical use.
+
+## Reproducibility
+
+The complete simulation and diagnostics are in [`05_age_length_consistency.R`](05_age_length_consistency.R). The variables and deliberate data-quality issues are documented in [`data-dictionary.md`](data-dictionary.md).

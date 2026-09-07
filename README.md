@@ -8,81 +8,44 @@ This repository is being developed as a transparent scientific portfolio. Its cu
 
 ## Scope
 
-The repository is intentionally **not tied to a single assessment method or modelling framework**. Examples are added according to the scientific question, observation process and information available, including fishery-dependent and fishery-independent data.
+The repository is not tied to one assessment method. Examples are organized around the scientific question, the observation process, data support, diagnostics and transparent interpretation.
 
-Topics will progressively include:
-
-- fisheries data exploration and quality control;
-- sampling design, coverage and internal consistency;
-- length-frequency distributions and spatio-temporal structure;
-- age–length information and age composition;
-- life-history data and parameter consistency;
-- population dynamics and productivity;
-- data-limited approaches;
-- biomass-dynamic, state-space and age-structured assessment;
-- diagnostics, retrospective patterns, sensitivity and uncertainty;
-- biological and management reference points;
-- short-term forecasting and harvest strategies;
-- management strategy evaluation and management-oriented interpretation.
+Current and planned topics include data exploration and quality control; sampling design and coverage; length-frequency distributions; spatio-temporal consistency; age–length information and ALKs; life-history data and parameter consistency; and, only later, assessment models, diagnostics, reference points, forecasts and harvest strategies.
 
 ## Scientific approach
 
-The examples are developed around a few principles:
-
 1. **Understand the observation process first** — sampling design, fleet behaviour, spatial coverage and monitoring changes can shape apparent biological patterns.
 2. **Reproducibility** — analyses should run from clearly documented inputs and code.
-3. **Transparency** — assumptions, data limitations, exclusions and harmonization decisions should be explicit.
-4. **Diagnostics before conclusions** — conflicting or unusual observations should be investigated before they are interpreted.
-5. **Model fitting comes later** — a model should be selected only after the available information has been explored and its limitations understood.
-6. **Management relevance** — quantitative results should ultimately connect to clearly stated fisheries-management questions.
-7. **Shareable data** — examples use simulated, open, or otherwise publicly shareable information.
+3. **Transparency** — assumptions, limitations, exclusions and harmonization decisions should be explicit.
+4. **Diagnostics before conclusions** — conflicting or unusual observations should be investigated before interpretation.
+5. **Model fitting comes later** — model choice follows evidence-building, not the other way around.
+6. **Shareable data** — examples use simulated, open or otherwise publicly shareable information.
 
 ## Current workflow
 
 ### 01 — Data exploration
-
-A simulated exploited stock is used to examine annual catch, effort and CPUE and to introduce the idea that these indicators require interpretation before assessment.
-
-- [Live Quarto module](https://redafahim-egy.github.io/fisheries-stock-assessment-r/01-data-exploration/)
-- [`01-data-exploration/index.qmd`](01-data-exploration/index.qmd)
-- [`01-data-exploration/01_simulated_fishery.R`](01-data-exploration/01_simulated_fishery.R)
+Catch, effort and CPUE are explored before assessment.
 
 ### 02 — Data quality and consistency
-
-A richer simulated monitoring dataset is audited across year, quarter, area and fleet. The workflow examines sampling coverage, missing strata, duplicate keys, units and coding, invalid values, reported-versus-recalculated CPUE, robust outlier screening, protocol changes and explicit issue tracking.
-
-- [Live Quarto module](https://redafahim-egy.github.io/fisheries-stock-assessment-r/02-data-quality-consistency/)
-- [`02-data-quality-consistency/index.qmd`](02-data-quality-consistency/index.qmd)
-- [`02-data-quality-consistency/02_data_quality_checks.R`](02-data-quality-consistency/02_data_quality_checks.R)
-- [`02-data-quality-consistency/data-dictionary.md`](02-data-quality-consistency/data-dictionary.md)
+A structured monitoring dataset is audited for coverage, duplicates, units/codes, invalid values, CPUE consistency, outliers and protocol changes.
 
 ### 03 — Length-frequency distributions
-
-A simulated individual-level monitoring programme explores length structure across **year × month × area × fleet × gear × source** before any growth, mortality, recruitment or stock-status inference is attempted.
-
-The workflow includes record-level plausibility checks, duplicate handling, sample-size and coverage diagnostics, 1-cm LFDs, length-heaping detection, density and ridgeline-style displays, area × gear comparisons, temporal quantiles, length × year heatmaps, pooled-versus-standardized LFDs, incomplete-scope sensitivity analysis and Jensen–Shannon distributional change.
-
-- [Live Quarto module](https://redafahim-egy.github.io/fisheries-stock-assessment-r/03-length-frequency/)
-- [`03-length-frequency/index.qmd`](03-length-frequency/index.qmd)
-- [`03-length-frequency/03_length_frequency_analysis.R`](03-length-frequency/03_length_frequency_analysis.R)
-- [`03-length-frequency/data-dictionary.md`](03-length-frequency/data-dictionary.md)
+Individual-level data are explored across year × month × area × fleet × gear × source using binned LFDs, densities, ridgelines, heatmaps, heaping checks and pooling-versus-standardization diagnostics.
 
 ### 04 — Spatio-temporal consistency
+Persistent area × season × gear × source strata are used to separate apparent biological change from sampling-design drift.
 
-The Module 03 monitoring programme is re-examined within persistent **area × season × gear × source** strata to determine whether apparent annual changes survive like-for-like comparison.
+### 05 — Age–length consistency
+A simulated ageing programme audits age-support, length-at-age plausibility, reader agreement, temporal reader drift, ALK support and transferability of historical ALKs to later years.
 
-The workflow includes sampling-composition diagnostics, Jensen–Shannon design drift, pooled versus fixed-design annual mean length, within-stratum temporal anomalies, area synchrony, gear-specific departures, directional agreement among strata, matched spatial contrasts and leave-one-area-out sensitivity.
-
-- [Live Quarto module](https://redafahim-egy.github.io/fisheries-stock-assessment-r/04-spatiotemporal-consistency/)
-- [`04-spatiotemporal-consistency/index.qmd`](04-spatiotemporal-consistency/index.qmd)
-- [`04-spatiotemporal-consistency/04_spatiotemporal_consistency.R`](04-spatiotemporal-consistency/04_spatiotemporal_consistency.R)
-- [`04-spatiotemporal-consistency/data-dictionary.md`](04-spatiotemporal-consistency/data-dictionary.md)
+- [Live Quarto module](https://redafahim-egy.github.io/fisheries-stock-assessment-r/05-age-length-consistency/)
+- [`05-age-length-consistency/index.qmd`](05-age-length-consistency/index.qmd)
+- [`05-age-length-consistency/05_age_length_consistency.R`](05-age-length-consistency/05_age_length_consistency.R)
+- [`05-age-length-consistency/data-dictionary.md`](05-age-length-consistency/data-dictionary.md)
 
 ## Next scientific stage
 
-The next stage will focus on **age–length consistency**: sample support across age and length, age composition, age-length keys, temporal and spatial coherence, and checks for biological implausibility or ageing artefacts.
-
-Life-history information will follow as a later pre-assessment stage. Model fitting remains deliberately downstream of this evidence-building process.
+The next stage will focus on **life-history data quality and parameter consistency**: weight–length relationships, maturity, sex structure, growth parameter provenance and compatibility, mortality inputs, spatial/temporal coherence and uncertainty. Model fitting remains deliberately downstream.
 
 ## Reproducibility and data policy
 

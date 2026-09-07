@@ -14,42 +14,33 @@ The project deliberately emphasizes the work that should happen **before model f
 
 A simulated exploited stock is used to examine annual catch, fishing effort and CPUE before any formal stock-assessment model is fitted.
 
-The module asks:
-
-- What do the observed time series actually show?
-- Are trends in catch, effort and CPUE internally consistent?
-- Under what assumptions can CPUE be interpreted as a relative abundance index?
-- What should be investigated before choosing an assessment model?
-
 [Open Module 01 →](01-data-exploration/index.qmd)
 
 ### 02 — Data quality and consistency
 
-A richer simulated monitoring dataset is audited across year, quarter, area and fleet. The workflow examines sampling coverage, missing strata, duplicate keys, units and coding, invalid observations, internal CPUE consistency, robust outlier screening and changes in monitoring protocol.
-
-The emphasis is on **transparent issue detection and documented decisions**, not automatic deletion or premature model fitting.
+A richer simulated monitoring dataset is audited across year, quarter, area and fleet, including coverage, missing strata, duplicate keys, units, coding, invalid observations, CPUE consistency, outliers and protocol changes.
 
 [Open Module 02 →](02-data-quality-consistency/index.qmd)
 
 ### 03 — Length-frequency distributions
 
-An individual-level simulated monitoring programme is used to examine LFDs across year, month, area, fleet, gear and source. The module combines record-level QC, sample-size diagnostics, binned LFDs, density and ridgeline-style comparisons, length × year heatmaps, area × gear contrasts, pooling-versus-standardization diagnostics, heaping checks and sensitivity to incomplete measurement scope.
-
-The central question is not simply *what shape does the LFD have?* but **whether the distributions being compared are genuinely comparable by design**.
+An individual-level simulated monitoring programme examines LFDs across year, month, area, fleet, gear and source, combining binned LFDs with density/ridgeline displays, heatmaps, heaping checks and pooling-versus-standardization diagnostics.
 
 [Open Module 03 →](03-length-frequency/index.qmd)
 
 ### 04 — Spatio-temporal consistency
 
-The same simulated length-monitoring programme is re-examined using persistent **area × season × gear × source** strata. The module quantifies sampling-design drift, compares pooled and fixed-design annual length summaries, measures within-stratum anomalies, checks directional agreement among strata, examines spatial synchrony, isolates gear-specific changes and uses leave-one-area-out sensitivity to identify spatial dominance.
-
-The key question is whether an apparent annual change remains after observations are compared **like with like**.
+Persistent **area × season × gear × source** strata are used to test whether apparent annual length changes survive like-for-like comparison after accounting for monitoring-design drift.
 
 [Open Module 04 →](04-spatiotemporal-consistency/index.qmd)
 
-## Scientific principles
+### 05 — Age–length consistency
 
-The material developed here follows six principles:
+A dedicated simulated ageing programme audits sample support, age composition, biological plausibility of length-at-age, paired-reader agreement, temporal reader drift, ALK support and out-of-period ALK transferability. The central question is whether age observations are coherent enough to be used beyond the strata and period in which they were collected.
+
+[Open Module 05 →](05-age-length-consistency/index.qmd)
+
+## Scientific principles
 
 1. **Understand the data-generating process first** — sampling design and observation systems are part of the scientific problem.
 2. **Reproducibility** — inputs, code and analytical choices should be traceable.
@@ -60,7 +51,7 @@ The material developed here follows six principles:
 
 ## Development roadmap
 
-The next pre-assessment stage will focus on **age–length consistency**: age composition, age-length keys, sample support by age and length, temporal/spatial stability, and checks for biological or ageing inconsistencies. Life-history information will follow after that. Stock-assessment model fitting remains deliberately downstream of these evidence-building stages.
+The next pre-assessment stage will focus on **life-history data quality and parameter consistency**: weight–length relationships, maturity, sex structure, growth-parameter provenance and coherence, mortality inputs, spatial/temporal compatibility and uncertainty. Stock-assessment model fitting remains deliberately downstream.
 
 ## Data policy
 
