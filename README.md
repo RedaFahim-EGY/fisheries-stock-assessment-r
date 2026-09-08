@@ -10,7 +10,7 @@ This repository is being developed as a transparent scientific portfolio. Its cu
 
 The repository is not tied to one assessment method. Examples are organized around the scientific question, the observation process, data support, diagnostics and transparent interpretation.
 
-Current and planned topics include data exploration and quality control; sampling design and coverage; length-frequency distributions; spatio-temporal consistency; age–length information and ALKs; life-history data and parameter consistency; and, only later, assessment models, diagnostics, reference points, forecasts and harvest strategies.
+Current topics include data exploration and quality control; sampling design and coverage; length-frequency distributions; spatio-temporal consistency; age–length information and ALKs; and life-history data and parameter compatibility. Assessment models, diagnostics, reference points, forecasts and harvest strategies remain deliberately downstream.
 
 ## Scientific approach
 
@@ -38,14 +38,17 @@ Persistent area × season × gear × source strata are used to separate apparent
 ### 05 — Age–length consistency
 A simulated ageing programme audits age-support, length-at-age plausibility, reader agreement, temporal reader drift, ALK support and transferability of historical ALKs to later years.
 
-- [Live Quarto module](https://redafahim-egy.github.io/fisheries-stock-assessment-r/05-age-length-consistency/)
-- [`05-age-length-consistency/index.qmd`](05-age-length-consistency/index.qmd)
-- [`05-age-length-consistency/05_age_length_consistency.R`](05-age-length-consistency/05_age_length_consistency.R)
-- [`05-age-length-consistency/data-dictionary.md`](05-age-length-consistency/data-dictionary.md)
+### 06 — Life-history data quality and parameter consistency
+A simulated biological programme audits weight–length relationships, maturity/L50, sex structure, GSI phenology, growth information, sampling support, parameter provenance, transferability and natural-mortality sensitivity.
+
+- [Live Quarto module](https://redafahim-egy.github.io/fisheries-stock-assessment-r/06-life-history-consistency/)
+- [`06-life-history-consistency/index.qmd`](06-life-history-consistency/index.qmd)
+- [`06-life-history-consistency/06_life_history_consistency.R`](06-life-history-consistency/06_life_history_consistency.R)
+- [`06-life-history-consistency/data-dictionary.md`](06-life-history-consistency/data-dictionary.md)
 
 ## Next scientific stage
 
-The next stage will focus on **life-history data quality and parameter consistency**: weight–length relationships, maturity, sex structure, growth parameter provenance and compatibility, mortality inputs, spatial/temporal coherence and uncertainty. Model fitting remains deliberately downstream.
+The next stage should be an **integrated assessment-readiness review**. It should combine the preceding modules into a structured evidence table covering data support, observation-process risks, LFD consistency, spatial/temporal comparability, age information, life-history compatibility and unresolved uncertainty. The output should state what information is defensible for later assessment, what requires sensitivity analysis, and what should not yet be used.
 
 ## Reproducibility and data policy
 

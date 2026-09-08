@@ -1,0 +1,260 @@
+---
+title: "06 — Life-history data quality and parameter consistency"
+subtitle: "Are biological inputs internally coherent, representative and transferable?"
+author: "Reda M. Fahim"
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-tools: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+```{r}
+library(ggplot2)
+source("06_life_history_consistency.R")
+```
+
+## Why this comes before stock assessment
+
+Life-history parameters are often treated as fixed inputs: a growth curve, a maturity ogive, a weight–length relationship and a value for natural mortality are assembled and passed to an assessment.
+
+That can be dangerous. A parameter may be estimated correctly but still be inappropriate for the assessment if it represents a different stock, sex, period, sampling source, gear, ageing method or maturity protocol. The purpose of this module is therefore **not to estimate a definitive life-history parameter set**. It is to audit whether the biological evidence is internally coherent and sufficiently transferable for later use.
+
+The simulated programme contains individual fish observations from 2016–2025 across month, area and commercial/survey sources. Deliberate inconsistencies are embedded so that the workflow must detect and interpret them rather than simply fit curves.
+
+## 1. Start with record-level validity
+
+```{r}
+knitr::kable(issue_register, digits = 3, caption = "Life-history QC issue register")
+```
+
+The objective is not automatic deletion. Each flag points to a different action: unit verification, coding review, source-record checking, or sensitivity analysis.
+
+## 2. Is biological sampling adequately supported?
+
+Uneven sampling can make life-history differences appear biological when they are really differences in coverage.
+
+```{r}
+ggplot(support, aes(year, month, size = n_bio)) +
+  geom_point(alpha = 0.65) +
+  facet_grid(area ~ source) +
+  scale_x_continuous(breaks = seq(2016, 2025, 3)) +
+  labs(title = "Biological sampling support varies through space and time",
+       subtitle = "Point size is the number of valid fish in each year × month × area × source stratum",
+       x = NULL, y = "Month", size = "n") +
+  theme_minimal(base_size = 12)
+```
+
+A parameter estimate should not be interpreted without knowing whether the underlying sampling frame is persistent, balanced and biologically representative.
+
+## 3. Weight–length relationships: fit, then test stability
+
+Weight–length relationships are commonly used to convert numbers-at-length to biomass or to fill missing weight observations. A high R² is not sufficient evidence that one relationship is valid across sexes, years or sampling sources.
+
+```{r}
+ggplot(valid[!valid$condition_outlier, ], aes(length_cm, weight_g)) +
+  geom_point(alpha = 0.08, size = 0.6) +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 3), se = FALSE, linewidth = 0.8) +
+  facet_grid(sex ~ source) +
+  labs(title = "Weight–length structure differs subtly by sex and source",
+       subtitle = "Curves are descriptive; formal coefficients are estimated on the log scale",
+       x = "Length (cm)", y = "Weight (g)") +
+  theme_minimal(base_size = 12)
+```
+
+```{r}
+knitr::kable(wl_summary, digits = 4,
+  caption = "Sex- and source-specific log-linear weight–length relationships")
+```
+
+```{r}
+ggplot(wl_year, aes(year, b, group = sex, linetype = sex)) +
+  geom_line(linewidth = 0.8) + geom_point(size = 2) +
+  geom_hline(yintercept = 3, linetype = 3) +
+  labs(title = "Temporal stability of the weight–length exponent",
+       subtitle = "A stable overall relationship can still hide year-specific shifts",
+       x = NULL, y = "Estimated exponent b", linetype = "Sex") +
+  theme_minimal(base_size = 12)
+```
+
+## 4. Maturity: L50 is conditional on the observation process
+
+The simulated data contain sex-specific maturity schedules and a deliberate recent commercial-sampling drift that under-represents small immature fish.
+
+```{r}
+maturity_plot_data <- valid
+maturity_plot_data$length_bin <- floor(maturity_plot_data$length_cm / 2) * 2
+mat_bin <- aggregate(mature ~ length_bin + sex + source, maturity_plot_data, mean)
+mat_n <- aggregate(fish_id ~ length_bin + sex + source, maturity_plot_data, length)
+names(mat_n)[4] <- "n"
+mat_bin <- merge(mat_bin, mat_n, by = c("length_bin", "sex", "source"))
+mat_bin <- mat_bin[mat_bin$n >= 20, ]
+
+ggplot(mat_bin, aes(length_bin, mature, linetype = source)) +
+  geom_line(linewidth = 0.9) +
+  geom_point(aes(size = n), alpha = 0.65) +
+  facet_wrap(~ sex) +
+  scale_y_continuous(limits = c(0, 1)) +
+  labs(title = "Observed maturity ogives depend on sex and sampling source",
+       subtitle = "Point size shows biological sample support within each 2-cm bin",
+       x = "Length class (cm)", y = "Proportion mature", linetype = "Source", size = "n") +
+  theme_minimal(base_size = 12)
+```
+
+```{r}
+knitr::kable(maturity_summary, digits = 3, caption = "L50 estimates by sex and source")
+```
+
+```{r}
+ggplot(l50_year, aes(year, L50, group = sex, linetype = sex)) +
+  geom_line(linewidth = 0.8) + geom_point(size = 2) +
+  labs(title = "Annual L50 is a diagnostic time series, not just a single number",
+       subtitle = "Changes may reflect biology, sampling composition or maturity-staging practice",
+       x = NULL, y = "Estimated L50 (cm)", linetype = "Sex") +
+  theme_minimal(base_size = 12)
+```
+
+```{r}
+knitr::kable(late_l50, digits = 3, caption = "2024–2025 maturity sensitivity to sampling source")
+```
+
+A divergence between commercial and survey estimates is a reason to investigate the observation process before interpreting a temporal change in maturation.
+
+## 5. Sex ratio is also design-sensitive
+
+```{r}
+ggplot(sex_ratio, aes(year, prop_female, group = area, linetype = area)) +
+  geom_line(linewidth = 0.75) + geom_point(aes(size = n), alpha = 0.7) +
+  facet_wrap(~ source) + geom_hline(yintercept = 0.5, linetype = 3) +
+  labs(title = "Observed sex ratio varies with area and sampling source",
+       subtitle = "Differences should not automatically be interpreted as population sex-ratio change",
+       x = NULL, y = "Proportion female", linetype = "Area", size = "n") +
+  theme_minimal(base_size = 12)
+```
+
+This matters whenever sex-specific growth, maturity or mortality inputs are used.
+
+## 6. Spawning phenology: does the seasonal signal agree across components?
+
+```{r}
+ggplot(gsi_month, aes(month, gsi, group = sex, linetype = sex)) +
+  geom_line(linewidth = 0.9) + geom_point(aes(size = n), alpha = 0.75) +
+  scale_x_continuous(breaks = 1:12) +
+  labs(title = "Seasonal GSI identifies a coherent spawning window",
+       subtitle = "Peak timing should be consistent with maturity staging and sampling coverage",
+       x = "Month", y = "Mean GSI of mature fish", linetype = "Sex", size = "n") +
+  theme_minimal(base_size = 12)
+```
+
+```{r}
+knitr::kable(peak_month, digits = 2, caption = "Peak GSI month by sex")
+```
+
+```{r}
+ggplot(gsi_area_month, aes(month, gsi, group = area, linetype = area)) +
+  geom_line(linewidth = 0.8) + geom_point(size = 1.7) +
+  scale_x_continuous(breaks = 1:12) +
+  labs(title = "Female spawning phenology by area", x = "Month", y = "Mean GSI", linetype = "Area") +
+  theme_minimal(base_size = 12)
+```
+
+## 7. Growth parameters: estimation is not the same as compatibility
+
+A simulated age subsample is used to fit sex-specific von Bertalanffy curves. The role of this step is to check coherence with the observed size range and with maturity information.
+
+```{r}
+knitr::kable(growth_summary, digits = 3,
+  caption = "Sex-specific growth fits from the simulated ageing subset")
+```
+
+```{r}
+ggplot(age_subset, aes(age_observed, length_cm)) +
+  geom_jitter(width = 0.08, alpha = 0.07, size = 0.6) +
+  geom_smooth(method = "loess", se = FALSE, linewidth = 0.9) +
+  facet_wrap(~ sex) +
+  labs(title = "Age–length structure used to support growth estimates",
+       subtitle = "The scatter and sample support matter as much as the fitted parameters",
+       x = "Observed age", y = "Length (cm)") +
+  theme_minimal(base_size = 12)
+```
+
+## 8. Parameter provenance audit
+
+One of the most consequential pre-assessment tasks is deciding whether a candidate life-history parameter is actually compatible with the stock and data being assessed. The simulated catalogue intentionally mixes local/current, historical, adjacent-stock, sex-combined and default parameters.
+
+```{r}
+catalogue_display <- parameter_catalogue[, c("source_id", "parameter", "stock_unit", "sex",
+  "period", "method", "value_1", "value_2", "units", "compatibility_score", "compatibility_class")]
+knitr::kable(catalogue_display, digits = 3,
+  caption = "Candidate life-history parameter provenance and compatibility")
+```
+
+```{r}
+compat_counts <- as.data.frame(table(parameter_catalogue$parameter,
+  parameter_catalogue$compatibility_class), stringsAsFactors = FALSE)
+names(compat_counts) <- c("parameter", "compatibility", "n")
+compat_counts <- compat_counts[compat_counts$n > 0, ]
+ggplot(compat_counts, aes(compatibility, parameter, size = n)) +
+  geom_point(alpha = 0.75) +
+  labs(title = "Compatibility is part of the parameter, not an afterthought",
+       subtitle = "A precise estimate from the wrong stock, period or sex can be less useful than a noisier local estimate",
+       x = "Compatibility class", y = NULL, size = "Candidates") +
+  theme_minimal(base_size = 12)
+```
+
+The compatibility score is deliberately simple and transparent. It is an **audit device**, not a universal scoring system. A real assessment should define stock-specific evidence rules and document expert judgement.
+
+## 9. Natural mortality: retain sensitivity instead of false precision
+
+Natural mortality is frequently weakly informed. The workflow therefore retains a plausible range rather than silently selecting a single value.
+
+```{r}
+knitr::kable(M_candidates, digits = 3, caption = "Synthetic natural-mortality sensitivity set")
+```
+
+```{r}
+ggplot(M_candidates, aes(M, annual_survival)) +
+  geom_point(size = 3) + geom_line() +
+  labs(title = "Small changes in M imply meaningful changes in annual survival",
+       subtitle = "Sensitivity should be carried forward when M is weakly identified",
+       x = "Natural mortality M (year⁻¹)", y = "Annual survival exp(-M)") +
+  theme_minimal(base_size = 12)
+```
+
+## 10. Cross-component biological coherence
+
+Life-history components should not be audited independently. Growth, maturity, weight–length, spawning and mortality assumptions need to tell a biologically coherent story.
+
+```{r}
+knitr::kable(coherence_summary, digits = 3,
+  caption = "Cross-component life-history coherence diagnostics")
+```
+
+These are **diagnostics**, not hard biological laws. Their role is to force explicit comparison among inputs before they are embedded in an assessment.
+
+## 11. Assessment-readiness interpretation
+
+The main conclusions from this simulated case are methodological:
+
+- record-level QC must precede fitted biological relationships;
+- sampling support and composition should accompany every parameter estimate;
+- sex-specific structure can matter for growth, weight and maturity;
+- maturity estimates can shift because the observation protocol changes;
+- spawning phenology should be checked for temporal and spatial coherence;
+- historical or adjacent-stock parameters should not be transferred merely because they are available;
+- natural mortality uncertainty should be retained as sensitivity when it cannot be resolved;
+- life-history parameters should be reviewed **as a coherent set**, not as independent constants.
+
+::: {.callout-important}
+## No assessment model is fitted here
+
+This module stops at the point where the biological evidence can be described as supported, weak, conflicting or sensitive. Selecting and fitting an assessment model remains downstream of this evidence audit.
+:::
+
+## Reproducibility
+
+All observations and parameter sources in this module are simulated. The deliberate problems are documented in the data dictionary and generated reproducibly in `06_life_history_consistency.R`.

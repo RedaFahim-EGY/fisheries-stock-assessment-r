@@ -11,34 +11,34 @@ The project deliberately emphasizes the work that should happen **before model f
 ## Current modules
 
 ### 01 — Data exploration before assessment
-
 A simulated exploited stock is used to examine annual catch, fishing effort and CPUE before any formal stock-assessment model is fitted.
 
 [Open Module 01 →](01-data-exploration/index.qmd)
 
 ### 02 — Data quality and consistency
-
 A richer simulated monitoring dataset is audited across year, quarter, area and fleet, including coverage, missing strata, duplicate keys, units, coding, invalid observations, CPUE consistency, outliers and protocol changes.
 
 [Open Module 02 →](02-data-quality-consistency/index.qmd)
 
 ### 03 — Length-frequency distributions
-
 An individual-level simulated monitoring programme examines LFDs across year, month, area, fleet, gear and source, combining binned LFDs with density/ridgeline displays, heatmaps, heaping checks and pooling-versus-standardization diagnostics.
 
 [Open Module 03 →](03-length-frequency/index.qmd)
 
 ### 04 — Spatio-temporal consistency
-
 Persistent **area × season × gear × source** strata are used to test whether apparent annual length changes survive like-for-like comparison after accounting for monitoring-design drift.
 
 [Open Module 04 →](04-spatiotemporal-consistency/index.qmd)
 
 ### 05 — Age–length consistency
-
-A dedicated simulated ageing programme audits sample support, age composition, biological plausibility of length-at-age, paired-reader agreement, temporal reader drift, ALK support and out-of-period ALK transferability. The central question is whether age observations are coherent enough to be used beyond the strata and period in which they were collected.
+A dedicated simulated ageing programme audits sample support, age composition, biological plausibility of length-at-age, paired-reader agreement, temporal reader drift, ALK support and out-of-period ALK transferability.
 
 [Open Module 05 →](05-age-length-consistency/index.qmd)
+
+### 06 — Life-history data quality and parameter consistency
+An individual-level biological programme audits weight–length relationships, maturity and L50, sex structure, spawning phenology, growth information and sampling support, then links those observations to a provenance audit of candidate life-history parameters. The module explicitly tests whether biological inputs are compatible with the target stock, sex, period and observation process rather than treating them as interchangeable constants.
+
+[Open Module 06 →](06-life-history-consistency/index.qmd)
 
 ## Scientific principles
 
@@ -51,7 +51,7 @@ A dedicated simulated ageing programme audits sample support, age composition, b
 
 ## Development roadmap
 
-The next pre-assessment stage will focus on **life-history data quality and parameter consistency**: weight–length relationships, maturity, sex structure, growth-parameter provenance and coherence, mortality inputs, spatial/temporal compatibility and uncertainty. Stock-assessment model fitting remains deliberately downstream.
+The repository now has a coherent pre-assessment evidence chain from generic data quality through LFDs, spatio-temporal consistency, age–length information and life-history inputs. The next stage should integrate these diagnostics into an explicit **assessment-readiness review**: what evidence is supported, what is conflicting, which strata/parameters are transferable, and what uncertainties must be carried forward. Model fitting remains downstream of that synthesis.
 
 ## Data policy
 
