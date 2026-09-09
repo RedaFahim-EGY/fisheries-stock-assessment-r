@@ -1,0 +1,122 @@
+---
+title: "07 — Integrated assessment-readiness review"
+subtitle: "Turning diagnostics into explicit evidence gates before model fitting"
+author: "Reda M. Fahim"
+format:
+  html:
+    toc: true
+    code-fold: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+```{r}
+source("07_assessment_readiness.R")
+```
+
+## Why this module exists
+
+The preceding modules deliberately postpone model fitting. That delay is not procedural conservatism: it is part of the scientific method. Before choosing an assessment framework, the analyst should be able to state which observations are internally coherent, which biological inputs are transferable, which apparent trends depend on sampling design, and which uncertainties are large enough to alter the interpretation.
+
+This module therefore converts the diagnostics from Modules 02–06 into an **explicit assessment-readiness register**. It is not a scorecard intended to manufacture a single pass/fail number. Instead, each evidence domain is evaluated along four transparent dimensions: data support, temporal/spatial comparability, observation-process risk and parameter-provenance risk.
+
+## Readiness categories
+
+The classification is intentionally conservative:
+
+- **supported** — reasonably strong evidence, acceptable comparability and no major observation/provenance concern;
+- **usable with caveats** — defensible, but limitations should remain visible in interpretation;
+- **usable with sensitivity** — potentially useful only if alternative treatments are propagated through later analyses;
+- **unresolved / not recommended** — a critical issue should be resolved before direct use as a fixed assessment input.
+
+A large sample does not automatically imply readiness. For example, an abundance index may contain many observations yet still be vulnerable to changing catchability; similarly, a life-history parameter can be statistically precise but inappropriate if it comes from a different stock, sex, period or estimation method.
+
+## Integrated evidence register
+
+```{r}
+knitr::kable(
+  readiness[, c("domain", "module", "support", "comparability", "observation_risk", "provenance_risk", "status", "priority")],
+  caption = "Integrated evidence register. Scores are ordinal diagnostics, not statistical weights."
+)
+```
+
+```{r fig-height=6.8, fig-width=9}
+p_status
+```
+
+The purpose of the priority score is triage. High-priority domains should receive scientific attention before effort is invested in increasingly complex models.
+
+## What is driving each classification?
+
+```{r fig-height=6.8, fig-width=8.5}
+p_matrix
+```
+
+The heatmap is deliberately separated into evidence dimensions. A domain can be strong in one dimension and weak in another. Length-frequency data, for example, may have excellent sample support while temporal comparability is compromised by changing fleet, gear, source or spatial composition. This distinction is much more informative than reporting that the data are simply “good” or “bad”.
+
+## Key unresolved or sensitivity-sensitive issues
+
+```{r}
+knitr::kable(
+  readiness[, c("domain", "status", "key_issue")],
+  caption = "Scientific interpretation attached to each readiness decision."
+)
+```
+
+The integrated review identifies several recurring themes from the earlier modules:
+
+1. **Observation process matters.** Commercial CPUE should not be accepted as an abundance index solely because catch and effort exist. Internal consistency, fleet/area structure and possible catchability changes remain relevant.
+2. **Pooling can create trends.** LFD changes should be checked against persistent-stratum or standardized comparisons so that monitoring-design drift is not mistaken for population change.
+3. **Age information is conditional on ageing quality.** ALK support, reader disagreement and transferability across periods should remain part of later uncertainty treatment.
+4. **Life-history parameters need provenance.** Growth and natural mortality values are not interchangeable constants simply because they refer to the same species.
+
+## Assessment-input gates
+
+The next question is not “which model should I fit?” but **which evidence families are currently open for use?**
+
+```{r}
+knitr::kable(input_gates, caption = "Generic evidence gates derived from the readiness register.")
+```
+
+A closed gate does not necessarily mean that all future analysis is impossible. It means that an analysis requiring that input should not proceed as if the input were known and defensible.
+
+## What analyses are currently supportable?
+
+The following table is intentionally phrased as analysis scenarios rather than model recommendations. It asks whether the evidence requirements of increasingly demanding analyses are currently met.
+
+```{r}
+knitr::kable(
+  scenario_matrix,
+  caption = "Evidence requirements for increasingly demanding analysis scenarios."
+)
+```
+
+In this worked example, descriptive synthesis and selected exploratory analyses can proceed, while analyses requiring a fixed natural-mortality input remain blocked. That is a scientifically useful result: **the correct output of a readiness review can be a reason not to fit a model yet.**
+
+## Sensitivity register
+
+Uncertainty should not be postponed until after a model has been fitted. The readiness review specifies in advance which alternative treatments must be carried forward.
+
+```{r}
+knitr::kable(sensitivity_register, caption = "Sensitivity treatments that should accompany later analysis.")
+```
+
+This provides a traceable bridge between data diagnostics and future modelling. If a later assessment is sensitive to one of these choices, that sensitivity is expected and documented rather than discovered accidentally at the end.
+
+## Stop/go statement
+
+```{r results='asis'}
+cat("**", assessment_readiness_statement, "**", sep = "")
+```
+
+This is the central output of Module 07. It prevents methodological momentum from replacing scientific judgement.
+
+## What this module does *not* do
+
+No stock status is estimated here. No biomass, fishing mortality, MSY reference point or forecast is produced. The module also does not rank assessment packages. Model selection should follow only after the required evidence families have been reviewed, unresolved inputs addressed, and sensitivity treatments agreed.
+
+## Next stage
+
+The next scientific stage should be **model-requirement mapping and candidate-framework screening** rather than immediate fitting. That stage can compare the assumptions and data requirements of alternative assessment classes against the readiness register developed here. Only after that comparison should a first model be implemented.

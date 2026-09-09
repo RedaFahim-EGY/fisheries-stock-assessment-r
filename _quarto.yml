@@ -23,6 +23,8 @@ website:
         text: "05 Age–length"
       - href: 06-life-history-consistency/index.qmd
         text: "06 Life history"
+      - href: 07-assessment-readiness/index.qmd
+        text: "07 Readiness review"
   page-footer:
     left: "Reda M. Fahim"
     right: "Built with Quarto"

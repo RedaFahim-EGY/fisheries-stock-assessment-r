@@ -10,7 +10,7 @@ This repository is being developed as a transparent scientific portfolio. Its cu
 
 The repository is not tied to one assessment method. Examples are organized around the scientific question, the observation process, data support, diagnostics and transparent interpretation.
 
-Current topics include data exploration and quality control; sampling design and coverage; length-frequency distributions; spatio-temporal consistency; age–length information and ALKs; and life-history data and parameter compatibility. Assessment models, diagnostics, reference points, forecasts and harvest strategies remain deliberately downstream.
+Current topics include data exploration and quality control; sampling design and coverage; length-frequency distributions; spatio-temporal consistency; age–length information and ALKs; life-history data and parameter compatibility; and an integrated assessment-readiness review. Assessment models, diagnostics, reference points, forecasts and harvest strategies remain deliberately downstream.
 
 ## Scientific approach
 
@@ -41,14 +41,16 @@ A simulated ageing programme audits age-support, length-at-age plausibility, rea
 ### 06 — Life-history data quality and parameter consistency
 A simulated biological programme audits weight–length relationships, maturity/L50, sex structure, GSI phenology, growth information, sampling support, parameter provenance, transferability and natural-mortality sensitivity.
 
-- [Live Quarto module](https://redafahim-egy.github.io/fisheries-stock-assessment-r/06-life-history-consistency/)
-- [`06-life-history-consistency/index.qmd`](06-life-history-consistency/index.qmd)
-- [`06-life-history-consistency/06_life_history_consistency.R`](06-life-history-consistency/06_life_history_consistency.R)
-- [`06-life-history-consistency/data-dictionary.md`](06-life-history-consistency/data-dictionary.md)
+### 07 — Integrated assessment-readiness review
+Diagnostics from Modules 02–06 are converted into an explicit evidence register with readiness categories, input gates, follow-up priorities, sensitivity treatments and a stop/go statement before model fitting.
+
+- [Live Quarto module](https://redafahim-egy.github.io/fisheries-stock-assessment-r/07-assessment-readiness/)
+- [`07-assessment-readiness/index.qmd`](07-assessment-readiness/index.qmd)
+- [`07-assessment-readiness/07_assessment_readiness.R`](07-assessment-readiness/07_assessment_readiness.R)
 
 ## Next scientific stage
 
-The next stage should be an **integrated assessment-readiness review**. It should combine the preceding modules into a structured evidence table covering data support, observation-process risks, LFD consistency, spatial/temporal comparability, age information, life-history compatibility and unresolved uncertainty. The output should state what information is defensible for later assessment, what requires sensitivity analysis, and what should not yet be used.
+The next step is **model-requirement mapping and candidate-framework screening**. Alternative assessment classes should be compared against the evidence gates and uncertainty register before any model is selected or fitted.
 
 ## Reproducibility and data policy
 

@@ -36,9 +36,14 @@ A dedicated simulated ageing programme audits sample support, age composition, b
 [Open Module 05 →](05-age-length-consistency/index.qmd)
 
 ### 06 — Life-history data quality and parameter consistency
-An individual-level biological programme audits weight–length relationships, maturity and L50, sex structure, spawning phenology, growth information and sampling support, then links those observations to a provenance audit of candidate life-history parameters. The module explicitly tests whether biological inputs are compatible with the target stock, sex, period and observation process rather than treating them as interchangeable constants.
+An individual-level biological programme audits weight–length relationships, maturity and L50, sex structure, spawning phenology, growth information and sampling support, then links those observations to a provenance audit of candidate life-history parameters.
 
 [Open Module 06 →](06-life-history-consistency/index.qmd)
+
+### 07 — Integrated assessment-readiness review
+The evidence from Modules 02–06 is synthesized into an explicit readiness register. Each evidence family is classified as supported, usable with caveats, usable with sensitivity, or unresolved/not recommended. The module also defines input gates, sensitivity priorities and a stop/go statement before any assessment model is fitted.
+
+[Open Module 07 →](07-assessment-readiness/index.qmd)
 
 ## Scientific principles
 
@@ -51,7 +56,7 @@ An individual-level biological programme audits weight–length relationships, m
 
 ## Development roadmap
 
-The repository now has a coherent pre-assessment evidence chain from generic data quality through LFDs, spatio-temporal consistency, age–length information and life-history inputs. The next stage should integrate these diagnostics into an explicit **assessment-readiness review**: what evidence is supported, what is conflicting, which strata/parameters are transferable, and what uncertainties must be carried forward. Model fitting remains downstream of that synthesis.
+The repository now contains a complete pre-assessment evidence chain from generic data quality through LFDs, spatio-temporal consistency, age–length information, life-history inputs and an integrated assessment-readiness review. The next scientific step is **model-requirement mapping**: compare the assumptions and data requirements of alternative assessment classes against the readiness register before choosing a first modelling framework.
 
 ## Data policy
 
