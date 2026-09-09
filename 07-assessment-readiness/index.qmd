@@ -6,6 +6,7 @@ format:
   html:
     toc: true
     code-fold: true
+    code-tools: true
 execute:
   echo: true
   warning: false
@@ -13,6 +14,7 @@ execute:
 ---
 
 ```{r}
+#| include: false
 source("07_assessment_readiness.R")
 ```
 
@@ -35,10 +37,22 @@ A large sample does not automatically imply readiness. For example, an abundance
 
 ## Integrated evidence register
 
+The first view is intentionally compact. The detailed scores are shown graphically below rather than forcing a wide table onto the page.
+
 ```{r}
+readiness_display <- data.frame(
+  Domain = readiness$domain,
+  Module = readiness$module,
+  Status = as.character(readiness$status),
+  Priority = as.character(readiness$priority),
+  stringsAsFactors = FALSE
+)
+
 knitr::kable(
-  readiness[, c("domain", "module", "support", "comparability", "observation_risk", "provenance_risk", "status", "priority")],
-  caption = "Integrated evidence register. Scores are ordinal diagnostics, not statistical weights."
+  readiness_display,
+  format = "html",
+  table.attr = 'class="table table-sm table-striped align-middle"',
+  caption = "Integrated evidence register. Classification is diagnostic, not a statistical weight."
 )
 ```
 
@@ -58,14 +72,23 @@ The purpose of the priority score is triage. High-priority domains should receiv
 p_matrix
 ```
 
-The heatmap is deliberately separated into evidence dimensions. A domain can be strong in one dimension and weak in another. Length-frequency data, for example, may have excellent sample support while temporal comparability is compromised by changing fleet, gear, source or spatial composition. This distinction is much more informative than reporting that the data are simply “good” or “bad”.
+The heatmap separates the four evidence dimensions rather than collapsing them into one number. A domain can be strong in one dimension and weak in another. Length-frequency data, for example, may have excellent sample support while temporal comparability is compromised by changing fleet, gear, source or spatial composition. This distinction is more informative than reporting that the data are simply “good” or “bad”.
 
-## Key unresolved or sensitivity-sensitive issues
+## Issues that still need attention
+
+The table below is restricted to domains that are not currently classified as fully supported.
 
 ```{r}
+attention <- readiness[as.character(readiness$status) != "supported",
+                       c("domain", "status", "key_issue")]
+attention$status <- as.character(attention$status)
+names(attention) <- c("Domain", "Status", "Why it matters")
+
 knitr::kable(
-  readiness[, c("domain", "status", "key_issue")],
-  caption = "Scientific interpretation attached to each readiness decision."
+  attention,
+  format = "html",
+  table.attr = 'class="table table-sm table-striped align-middle"',
+  caption = "Domains requiring caveats, sensitivity analysis or resolution."
 )
 ```
 
@@ -81,18 +104,54 @@ The integrated review identifies several recurring themes from the earlier modul
 The next question is not “which model should I fit?” but **which evidence families are currently open for use?**
 
 ```{r}
-knitr::kable(input_gates, caption = "Generic evidence gates derived from the readiness register.")
+gate_display <- data.frame(
+  `Evidence family` = gsub("_", " ", input_gates$evidence_family),
+  `Representative domain` = input_gates$representative_domain,
+  Status = as.character(input_gates$status),
+  Gate = ifelse(input_gates$gate_open, "OPEN", "CLOSED"),
+  check.names = FALSE
+)
+
+knitr::kable(
+  gate_display,
+  format = "html",
+  table.attr = 'class="table table-sm table-striped align-middle"',
+  caption = "Generic evidence gates derived from the readiness register."
+)
 ```
 
 A closed gate does not necessarily mean that all future analysis is impossible. It means that an analysis requiring that input should not proceed as if the input were known and defensible.
 
 ## What analyses are currently supportable?
 
-The following table is intentionally phrased as analysis scenarios rather than model recommendations. It asks whether the evidence requirements of increasingly demanding analyses are currently met.
+The following summary is intentionally phrased as **analysis scenarios**, not model recommendations. It asks whether the evidence requirements of increasingly demanding analyses are currently met.
 
 ```{r}
+requirement_cols <- setdiff(
+  names(scenario_matrix),
+  c("scenario", "all_required_gates_open")
+)
+
+scenario_display <- data.frame(
+  Scenario = scenario_matrix$scenario,
+  Requirements = apply(
+    scenario_matrix[, requirement_cols, drop = FALSE],
+    1,
+    function(x) {
+      req <- requirement_cols[as.logical(x)]
+      paste(gsub("_", " ", req), collapse = ", ")
+    }
+  ),
+  `All required gates open?` = ifelse(
+    scenario_matrix$all_required_gates_open, "YES", "NO"
+  ),
+  check.names = FALSE
+)
+
 knitr::kable(
-  scenario_matrix,
+  scenario_display,
+  format = "html",
+  table.attr = 'class="table table-sm table-striped align-middle"',
   caption = "Evidence requirements for increasingly demanding analysis scenarios."
 )
 ```
@@ -104,16 +163,34 @@ In this worked example, descriptive synthesis and selected exploratory analyses 
 Uncertainty should not be postponed until after a model has been fitted. The readiness review specifies in advance which alternative treatments must be carried forward.
 
 ```{r}
-knitr::kable(sensitivity_register, caption = "Sensitivity treatments that should accompany later analysis.")
+sensitivity_display <- data.frame(
+  Issue = sensitivity_register$issue,
+  Priority = sensitivity_register$priority,
+  Treatment = paste0(
+    "<strong>Baseline:</strong> ", sensitivity_register$baseline_action,
+    "<br><strong>Sensitivity:</strong> ", sensitivity_register$sensitivity
+  ),
+  stringsAsFactors = FALSE
+)
+
+knitr::kable(
+  sensitivity_display,
+  format = "html",
+  escape = FALSE,
+  table.attr = 'class="table table-sm table-striped align-middle"',
+  caption = "Sensitivity treatments that should accompany later analysis."
+)
 ```
 
 This provides a traceable bridge between data diagnostics and future modelling. If a later assessment is sensitive to one of these choices, that sensitivity is expected and documented rather than discovered accidentally at the end.
 
 ## Stop/go statement
 
-```{r results='asis'}
-cat("**", assessment_readiness_statement, "**", sep = "")
-```
+::: {.callout-warning}
+## Readiness conclusion
+
+`r assessment_readiness_statement`
+:::
 
 This is the central output of Module 07. It prevents methodological momentum from replacing scientific judgement.
 
