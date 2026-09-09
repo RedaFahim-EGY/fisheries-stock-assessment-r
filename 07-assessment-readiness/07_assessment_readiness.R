@@ -70,10 +70,12 @@ readiness$priority <- cut(
 status_ok <- function(x) as.character(x) %in%
   c("supported", "usable with caveats", "usable with sensitivity")
 
+# Machine-readable evidence-family IDs deliberately match the scenario-matrix
+# column names. Human-readable domain labels remain separate.
 input_gates <- data.frame(
   evidence_family = c(
-    "catch history", "abundance index", "length composition",
-    "age composition", "growth maturity", "natural mortality"
+    "catch_history", "abundance_index", "length_composition",
+    "age_composition", "growth_maturity", "natural_mortality"
   ),
   representative_domain = c(
     "Catch and effort", "Commercial CPUE", "Length frequencies",
@@ -106,10 +108,14 @@ family_gate <- setNames(input_gates$gate_open, input_gates$evidence_family)
 scenario_matrix$all_required_gates_open <- apply(
   scenario_matrix[, -1], 1,
   function(req) {
-    needed <- gsub("_", " ", names(req)[as.logical(req)])
+    needed <- names(req)[as.logical(req)]
     if (!length(needed)) return(TRUE)
-    if (any(!needed %in% names(family_gate)))
-      stop("Scenario contains an evidence family not defined in input_gates")
+    if (any(!needed %in% names(family_gate))) {
+      stop(
+        "Scenario contains an evidence family not defined in input_gates: ",
+        paste(setdiff(needed, names(family_gate)), collapse = ", ")
+      )
+    }
     all(family_gate[needed])
   }
 )
