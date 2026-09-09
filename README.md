@@ -6,6 +6,8 @@ This repository is being developed as a transparent scientific portfolio. Its cu
 
 🌐 **Live Quarto website:** https://redafahim-egy.github.io/fisheries-stock-assessment-r/
 
+📘 **Use with your own stock:** [`USING-YOUR-OWN-DATA.md`](USING-YOUR-OWN-DATA.md)
+
 ## Scope
 
 The repository is not tied to one assessment method. Examples are organized around the scientific question, the observation process, data support, diagnostics and transparent interpretation.
@@ -39,7 +41,9 @@ Persistent area × season × gear × source strata are used to separate apparent
 A simulated ageing programme audits age-support, length-at-age plausibility, reader agreement, temporal reader drift, ALK support and transferability of historical ALKs to later years.
 
 ### 06 — Life-history data quality and parameter consistency
-A simulated biological programme audits weight–length relationships, maturity/L50, sex structure, GSI phenology, growth information, sampling support, parameter provenance, transferability and natural-mortality sensitivity.
+A simulated biological programme audits weight–length relationships, maturity/L50, sex structure, GSI phenology, growth information, sampling support and parameter provenance. Natural mortality is now compared explicitly across Pauly, Hoenig/Then longevity-based, Then growth-based and Gislason length-dependent empirical approaches rather than represented by an unexplained fixed value.
+
+Reusable mortality functions are provided in [`06-life-history-consistency/natural_mortality_methods.R`](06-life-history-consistency/natural_mortality_methods.R).
 
 ### 07 — Integrated assessment-readiness review
 Diagnostics from Modules 02–06 are converted into an explicit evidence register with readiness categories, input gates, follow-up priorities, sensitivity treatments and a stop/go statement before model fitting.
@@ -48,9 +52,15 @@ Diagnostics from Modules 02–06 are converted into an explicit evidence registe
 - [`07-assessment-readiness/index.qmd`](07-assessment-readiness/index.qmd)
 - [`07-assessment-readiness/07_assessment_readiness.R`](07-assessment-readiness/07_assessment_readiness.R)
 
+## Reusing the workflows
+
+The modules are worked examples, not a black-box assessment pipeline. Analysts adapting them to real stocks should map variable definitions and units explicitly, retain the original sampling structure, document stock-specific assumptions and propagate unresolved choices as sensitivity analyses.
+
+See [`USING-YOUR-OWN-DATA.md`](USING-YOUR-OWN-DATA.md) for the current module-by-module input mapping and reuse strategy.
+
 ## Next scientific stage
 
-The next step is **model-requirement mapping and candidate-framework screening**. Alternative assessment classes should be compared against the evidence gates and uncertainty register before any model is selected or fitted.
+Before moving into model fitting, the next development layer is to make more of Modules 02–07 reusable through documented helper functions and input templates, while preserving the scientific judgement and diagnostics shown in the Quarto pages. Model-requirement mapping and candidate-framework screening should follow that refactoring rather than precede it.
 
 ## Reproducibility and data policy
 
