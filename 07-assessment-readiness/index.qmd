@@ -42,7 +42,9 @@ knitr::kable(
 )
 ```
 
-```{r fig-height=6.8, fig-width=9}
+```{r}
+#| fig-height: 6.8
+#| fig-width: 9
 p_status
 ```
 
@@ -50,7 +52,9 @@ The purpose of the priority score is triage. High-priority domains should receiv
 
 ## What is driving each classification?
 
-```{r fig-height=6.8, fig-width=8.5}
+```{r}
+#| fig-height: 6.8
+#| fig-width: 8.5
 p_matrix
 ```
 
