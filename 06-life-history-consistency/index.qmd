@@ -208,24 +208,139 @@ ggplot(compat_counts, aes(compatibility, parameter, size = n)) +
 
 The compatibility score is deliberately simple and transparent. It is an **audit device**, not a universal scoring system. A real assessment should define stock-specific evidence rules and document expert judgement.
 
-## 9. Natural mortality: retain sensitivity instead of false precision
+## 9. Natural mortality: compare estimators before choosing a sensitivity range
 
-Natural mortality is frequently weakly informed. The workflow therefore retains a plausible range rather than silently selecting a single value.
+The previous version of this module used an illustrative low/central/high range. That was useful for demonstrating sensitivity but it did not answer an essential scientific question: **where should candidate values of M come from?**
+
+This version calculates several commonly used empirical estimators explicitly. They are not interchangeable: each uses different biological information and embeds different assumptions.
 
 ```{r}
-knitr::kable(M_candidates, digits = 3, caption = "Synthetic natural-mortality sensitivity set")
+source("natural_mortality_methods.R")
+
+# Illustrative mean annual habitat temperature for the simulated example.
+# Replace this with stock-specific evidence when adapting the workflow.
+temperature_C <- 17
+
+tmax_by_sex <- aggregate(age_observed ~ sex, age_subset, max)
+names(tmax_by_sex)[2] <- "tmax_observed"
+
+M_inputs <- merge(growth_summary[, c("sex", "Linf", "K", "t0")], tmax_by_sex, by = "sex")
+M_inputs$temperature_C <- temperature_C
+
+M_scalar_comparison <- do.call(rbind, lapply(seq_len(nrow(M_inputs)), function(i) {
+  d <- M_inputs[i, ]
+  out <- compare_scalar_M(
+    Linf_cm = d$Linf,
+    K = d$K,
+    temperature_C = d$temperature_C,
+    tmax_years = d$tmax_observed
+  )
+  out$sex <- d$sex
+  out
+}))
+M_scalar_comparison$annual_survival <- exp(-M_scalar_comparison$M)
+
+knitr::kable(
+  M_scalar_comparison[, c("sex", "method", "estimator_type", "M", "annual_survival")],
+  digits = 3,
+  caption = "Comparison of scalar empirical natural-mortality estimators"
+)
 ```
 
 ```{r}
-ggplot(M_candidates, aes(M, annual_survival)) +
-  geom_point(size = 3) + geom_line() +
-  labs(title = "Small changes in M imply meaningful changes in annual survival",
-       subtitle = "Sensitivity should be carried forward when M is weakly identified",
-       x = "Natural mortality M (year⁻¹)", y = "Annual survival exp(-M)") +
+ggplot(M_scalar_comparison, aes(M, method)) +
+  geom_point(size = 2.8) +
+  facet_wrap(~ sex) +
+  labs(
+    title = "Natural mortality depends on the estimator and its inputs",
+    subtitle = "Disagreement among empirical methods should be treated as information, not averaged away automatically",
+    x = "Estimated M (year⁻¹)", y = NULL
+  ) +
   theme_minimal(base_size = 12)
 ```
 
-## 10. Cross-component biological coherence
+### A length-dependent alternative
+
+Gislason et al. (2010) estimate M as a function of body length, growth and asymptotic length. This produces an age/length-dependent mortality pattern once a growth curve is supplied, rather than a single scalar M.
+
+```{r}
+M_gislason_curve <- do.call(rbind, lapply(seq_len(nrow(M_inputs)), function(i) {
+  d <- M_inputs[i, ]
+  out <- M_gislason_at_age(
+    age = 1:9,
+    Linf_cm = d$Linf,
+    K = d$K,
+    t0 = d$t0
+  )
+  out$sex <- d$sex
+  out
+}))
+
+ggplot(M_gislason_curve, aes(age, M, group = sex, linetype = sex)) +
+  geom_line(linewidth = 0.9) +
+  geom_point(size = 1.8) +
+  labs(
+    title = "Gislason et al. (2010) produces a declining M-at-age pattern",
+    subtitle = "The pattern inherits uncertainty from the fitted growth curve and from the empirical mortality relationship",
+    x = "Age", y = "M (year⁻¹)", linetype = "Sex"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+::: {.callout-warning}
+## Maximum observed age is not automatically longevity
+
+The `tmax` value used above is deliberately taken from the simulated ageing sample so the calculation is reproducible. In a real stock, the maximum observed age can be truncated by fishing, sampling design, ageing error or limited sample size. Longevity-based estimators should therefore use a defensible biological `tmax`, not simply `max(age)` without review.
+:::
+
+### What about PRODBIOM?
+
+PRODBIOM is **not** approximated here by a simple scalar equation. It is a mortality-at-age/length approach based on balancing biomass production and losses under life-history assumptions. Because its implementation is structurally different from the empirical scalar estimators above, reproducing it properly requires a dedicated, validated implementation rather than assigning the label “PRODBIOM” to an arbitrary M vector. It is therefore retained as a candidate future extension, particularly relevant to Mediterranean demersal assessments.
+
+### Methods represented here
+
+| Method | Main inputs | Output | Important caution |
+|---|---|---|---|
+| Pauly (1980) | Linf, K, mean temperature | scalar M | sensitive to growth and temperature inputs |
+| Hoenig (1983) | maximum age | longevity-based mortality relationship | original relationship predicts Z; using it as M requires caution |
+| Then et al. (2015), tmax | maximum age | scalar M | depends strongly on defensible longevity |
+| Then et al. (2015), growth | Linf, K | scalar M | empirical prediction, not direct estimation |
+| Gislason et al. (2010) | L, Linf, K | length-dependent M | inherits growth uncertainty and assumes the empirical size relationship applies |
+
+References used for the implemented equations include Pauly (1980), *Journal du Conseil* 39:175–192, doi:10.1093/icesjms/39.2.175; Gislason et al. (2010), *Fish and Fisheries* 11:149–158, doi:10.1111/j.1467-2979.2009.00350.x; and Then et al. (2015), *ICES Journal of Marine Science* 72:82–92, doi:10.1093/icesjms/fsu136, including the 2018 correction clarifying the length-unit convention for the growth-based equation.
+
+## 10. Use these routines with your own stock
+
+The reusable functions are separated from the simulated dataset in `natural_mortality_methods.R`. A user does not need to reproduce the simulation to use the estimators. With stock-specific biological inputs, the basic pattern is:
+
+```{r eval=FALSE}
+source("natural_mortality_methods.R")
+
+# Example only: replace with reviewed stock-specific inputs.
+Linf_cm <- 42.5
+K <- 0.31
+t0 <- -0.4
+tmax_years <- 9
+mean_temperature_C <- 18
+
+compare_scalar_M(
+  Linf_cm = Linf_cm,
+  K = K,
+  temperature_C = mean_temperature_C,
+  tmax_years = tmax_years
+)
+
+M_gislason_at_age(
+  age = 1:8,
+  Linf_cm = Linf_cm,
+  K = K,
+  t0 = t0
+)
+```
+
+The important step is **not** replacing the example numbers. It is documenting where each stock-specific input came from, its sex/spatial/temporal scope, and whether the assumptions of each estimator are appropriate. The same principle will progressively be applied to the other modules so that the repository becomes both a worked portfolio and a practical guide for analysts adapting the workflow to their own data.
+
+## 11. Cross-component biological coherence
 
 Life-history components should not be audited independently. Growth, maturity, weight–length, spawning and mortality assumptions need to tell a biologically coherent story.
 
@@ -236,7 +351,7 @@ knitr::kable(coherence_summary, digits = 3,
 
 These are **diagnostics**, not hard biological laws. Their role is to force explicit comparison among inputs before they are embedded in an assessment.
 
-## 11. Assessment-readiness interpretation
+## 12. Assessment-readiness interpretation
 
 The main conclusions from this simulated case are methodological:
 
@@ -246,7 +361,7 @@ The main conclusions from this simulated case are methodological:
 - maturity estimates can shift because the observation protocol changes;
 - spawning phenology should be checked for temporal and spatial coherence;
 - historical or adjacent-stock parameters should not be transferred merely because they are available;
-- natural mortality uncertainty should be retained as sensitivity when it cannot be resolved;
+- natural mortality should be compared across defensible estimators and propagated as sensitivity when it cannot be resolved;
 - life-history parameters should be reviewed **as a coherent set**, not as independent constants.
 
 ::: {.callout-important}
@@ -257,4 +372,4 @@ This module stops at the point where the biological evidence can be described as
 
 ## Reproducibility
 
-All observations and parameter sources in this module are simulated. The deliberate problems are documented in the data dictionary and generated reproducibly in `06_life_history_consistency.R`.
+All observations and parameter sources in this module are simulated. The deliberate problems are documented in the data dictionary and generated reproducibly in `06_life_history_consistency.R`. The natural-mortality equations are separated into `natural_mortality_methods.R` so they can be reused with reviewed stock-specific inputs.
