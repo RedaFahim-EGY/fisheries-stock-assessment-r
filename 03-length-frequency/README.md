@@ -45,18 +45,30 @@ These issues are retained in the raw simulated object and diagnosed explicitly. 
 10. Sensitivity to incomplete measurement scope.
 11. Jensen–Shannon divergence between consecutive annual distributions.
 
+## Reuse with your own data
+
+[`lfd_diagnostics.R`](lfd_diagnostics.R) separates the core diagnostics from the simulated example. It provides reusable functions to flag invalid/duplicate records, quantify sampling support across arbitrary strata, construct normalized LFDs, diagnose digit preference/heaping, compare two distributions using Jensen–Shannon divergence and a KS statistic, and test sensitivity to a known measurement-scope restriction.
+
+The functions accept column names explicitly, so a user's data do not need to use this repository's simulated field names. A typical workflow is:
+
+```r
+source("03-length-frequency/lfd_diagnostics.R")
+
+x <- flag_length_records(my_data, "length_cm", "fish_id",
+                         min_length = 5, max_length = 100)
+coverage <- lfd_coverage(x, c("year", "area", "fleet", "gear"),
+                         id_col = "fish_id", min_n = 30)
+lfd <- lfd_proportions(x[!x$length_out_of_range, ], "length_cm",
+                       c("year", "area", "gear"), bin_width = 1)
+heaping <- length_heaping(x, "length_cm", c("year", "gear"),
+                          heaping_interval = 5)
+```
+
+Thresholds such as plausible length bounds and minimum sample size are intentionally supplied by the analyst: they are species-, programme- and question-dependent and should not be hidden defaults masquerading as universal fisheries rules.
+
 ## Important interpretation rule
 
-A change in an LFD is not automatically a change in the population. It may instead reflect:
-
-- sampling coverage;
-- fleet composition;
-- gear selectivity;
-- spatial redistribution;
-- seasonal availability;
-- protocol changes;
-- market/sample selection;
-- measurement rounding or other observation artefacts.
+A change in an LFD is not automatically a change in the population. It may instead reflect sampling coverage, fleet composition, gear selectivity, spatial redistribution, seasonal availability, protocol changes, market/sample selection, measurement rounding or other observation artefacts.
 
 The module therefore stops before estimating recruitment, growth, mortality, selectivity or stock status.
 
@@ -64,6 +76,7 @@ The module therefore stops before estimating recruitment, growth, mortality, sel
 
 - [`index.qmd`](index.qmd) — complete Quarto narrative and figures.
 - [`03_length_frequency_analysis.R`](03_length_frequency_analysis.R) — simulation, QC, standardization and distributional diagnostics.
+- [`lfd_diagnostics.R`](lfd_diagnostics.R) — reusable diagnostics for analysts' own individual-length data.
 - [`data-dictionary.md`](data-dictionary.md) — field definitions and interpretation notes.
 
 All data are simulated and publicly shareable.
