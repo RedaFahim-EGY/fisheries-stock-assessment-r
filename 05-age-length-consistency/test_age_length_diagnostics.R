@@ -49,7 +49,8 @@ coverage <- ageing_coverage(
 stopifnot(nrow(coverage) > 20, all(coverage$n_aged > 0), is.logical(coverage$weak_support))
 
 plaus <- x
-plaus$length_cm[plaus$age == 4][1] <- 95
+i4 <- which(plaus$age == 4)[1]
+plaus$length_cm[i4] <- 95
 plaus_checked <- age_length_outliers(plaus, "age", "length_cm", mad_multiplier = 5, min_n = 8)
 stopifnot(any(plaus_checked$age_length_outlier))
 
