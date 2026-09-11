@@ -151,7 +151,69 @@ ggplot(plot_la, aes(year, deviation_cm, group = factor(age_reader1))) +
 
 This diagnostic should be interpreted alongside the reader results. A change in observed length-at-age is not automatically evidence of growth variation; it can arise from fleet selectivity, spatial composition, ageing drift or sparse sample support.
 
-## 8. Assessment-readiness interpretation
+## 8. Reuse the diagnostics with another stock
+
+The worked example above is intentionally complete, but the reusable calculations are also separated into [`age_length_diagnostics.R`](age_length_diagnostics.R). They accept column names as arguments rather than requiring the simulated variable names used on this page.
+
+A real workflow can therefore start from its own ageing table:
+
+```r
+source("05-age-length-consistency/age_length_diagnostics.R")
+
+age_raw <- read.csv("my_ageing_data.csv")
+
+age_qc <- flag_age_length_records(
+  age_raw,
+  length_col = "length_cm",
+  age_col = "age",
+  id_col = "fish_id",
+  min_length = 8,
+  max_length = 80,
+  min_age = 0,
+  max_age = 12
+)
+
+coverage <- ageing_coverage(
+  age_qc,
+  strata = c("year", "area", "season", "source", "gear"),
+  id_col = "fish_id",
+  min_n = 15
+)
+```
+
+The reusable layer also supports paired-reader diagnostics, robust length-at-age screening and ALK transfer tests. For example, a historical ALK can be estimated on a training period and evaluated on an independent later period using either a global key or a biologically justified stratification:
+
+```r
+train <- subset(age_qc, year <= 2020)
+test  <- subset(age_qc, year >= 2021)
+
+global_transfer <- evaluate_alk_transfer(
+  train, test,
+  length_col = "length_cm",
+  age_col = "age",
+  bin_width = 2,
+  prediction = "expected"
+)
+
+stratified_transfer <- evaluate_alk_transfer(
+  train, test,
+  length_col = "length_cm",
+  age_col = "age",
+  strata = c("area", "source"),
+  bin_width = 2,
+  prediction = "expected"
+)
+```
+
+The resulting comparison reports **support coverage, mean error, mean absolute error and RMSE**. Those quantities answer different questions: coverage measures whether the historical ALK spans the later sample, while bias and prediction error test whether the mapping from length to age remains compatible.
+
+::: {.callout-important}
+## Thresholds are not universal
+
+The example age bounds, minimum sample sizes, 2-cm ALK bins and training/test periods are demonstration choices. A real assessment must define them from species biology, the ageing protocol, sampling design and the intended use of the ALK. The functions expose those choices rather than hiding them.
+:::
+
+## 9. Assessment-readiness interpretation
 
 Before age composition or ALKs are used in an assessment, this workflow would require evidence that:
 
@@ -167,4 +229,4 @@ The output of this module is therefore **not an age-based stock assessment**. It
 
 ## Reproducibility
 
-The complete simulation and diagnostics are in [`05_age_length_consistency.R`](05_age_length_consistency.R). The variables and deliberate data-quality issues are documented in [`data-dictionary.md`](data-dictionary.md).
+The complete simulation and diagnostics are in [`05_age_length_consistency.R`](05_age_length_consistency.R). Reusable functions for another stock are in [`age_length_diagnostics.R`](age_length_diagnostics.R). The variables and deliberate data-quality issues are documented in [`data-dictionary.md`](data-dictionary.md). The reusable functions are exercised by deterministic CI checks in [`test_age_length_diagnostics.R`](test_age_length_diagnostics.R).
