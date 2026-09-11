@@ -37,6 +37,9 @@ jobs:
             any::patchwork
           cache-version: 1
 
+      - name: Check reusable age-length diagnostics
+        run: Rscript 05-age-length-consistency/test_age_length_diagnostics.R
+
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
         env:
