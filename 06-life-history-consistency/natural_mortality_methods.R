@@ -34,12 +34,17 @@ M_pauly1980 <- function(Linf_cm, K, temperature_C) {
 }
 
 # Hoenig (1983), teleost longevity relationship.
-# Original relationship predicts total mortality Z from maximum age. It is often
-# used as a proxy for M only when fishing mortality is negligible or as a
-# comparative life-history diagnostic. Do not silently equate Z and M.
-M_hoenig1983_proxy <- function(tmax_years) {
+# IMPORTANT: the original relationship predicts total mortality Z, not natural
+# mortality M. It can only approximate M when fishing mortality is negligible.
+Z_hoenig1983 <- function(tmax_years) {
   .check_positive(tmax_years, "tmax_years")
   exp(1.46 - 1.01 * log(tmax_years))
+}
+
+# Backward-compatible alias retained for earlier teaching code. The name itself
+# makes the proxy status explicit, but new code should use Z_hoenig1983().
+M_hoenig1983_proxy <- function(tmax_years) {
+  Z_hoenig1983(tmax_years)
 }
 
 # Then et al. (2015): recommended tmax-based empirical estimator.
@@ -81,26 +86,23 @@ vb_length_at_age <- function(age, Linf_cm, K, t0) {
   Linf_cm * (1 - exp(-K * (age - t0)))
 }
 
-# Compare scalar estimators for one set of life-history inputs.
-# The Hoenig value is retained under an explicit 'proxy' label because the
-# original estimator targets Z rather than M directly.
+# Compare scalar estimators that explicitly predict natural mortality M for one
+# set of life-history inputs. Hoenig (1983) is deliberately excluded from this
+# table because its original dependent variable is total mortality Z.
 compare_scalar_M <- function(Linf_cm, K, temperature_C, tmax_years) {
   data.frame(
     method = c(
       "Pauly (1980)",
-      "Hoenig (1983) longevity proxy",
       "Then et al. (2015) tmax",
       "Then et al. (2015) growth"
     ),
     M = c(
       M_pauly1980(Linf_cm, K, temperature_C),
-      M_hoenig1983_proxy(tmax_years),
       M_then2015_tmax(tmax_years),
       M_then2015_growth(Linf_cm, K)
     ),
     estimator_type = c(
       "scalar; growth + temperature",
-      "scalar; longevity relationship for Z",
       "scalar; maximum age",
       "scalar; growth"
     ),
