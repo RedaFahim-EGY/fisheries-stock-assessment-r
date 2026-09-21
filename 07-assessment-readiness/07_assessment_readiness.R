@@ -67,8 +67,13 @@ readiness$priority <- cut(
   labels = c("routine", "important", "high")
 )
 
-status_ok <- function(x) as.character(x) %in%
-  c("supported", "usable with caveats", "usable with sensitivity")
+# A gate marked OPEN means the evidence can be used directly under the stated
+# baseline treatment. "Usable with sensitivity" is deliberately not treated as
+# open: that category requires competing treatments to be propagated rather
+# than silently selecting one as if it were established. A closed gate therefore
+# does not prohibit analysis; it prohibits unconditional/direct use.
+direct_use_ok <- function(x) as.character(x) %in%
+  c("supported", "usable with caveats")
 
 # Machine-readable evidence-family IDs deliberately match the scenario-matrix
 # column names. Human-readable domain labels remain separate.
@@ -84,7 +89,7 @@ input_gates <- data.frame(
   stringsAsFactors = FALSE
 )
 input_gates$status <- readiness$status[match(input_gates$representative_domain, readiness$domain)]
-input_gates$gate_open <- vapply(input_gates$status, status_ok, logical(1))
+input_gates$gate_open <- vapply(input_gates$status, direct_use_ok, logical(1))
 
 # Analysis scenarios describe evidence requirements only; they are not model recommendations.
 scenario_matrix <- data.frame(
@@ -187,6 +192,7 @@ stopifnot(
   any(as.character(readiness$status) == "supported"),
   any(as.character(readiness$status) == "usable with sensitivity"),
   any(as.character(readiness$status) == "unresolved / not recommended"),
+  !any(input_gates$gate_open[as.character(input_gates$status) == "usable with sensitivity"]),
   !anyNA(scenario_matrix$all_required_gates_open),
   any(!scenario_matrix$all_required_gates_open)
 )
