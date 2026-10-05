@@ -128,6 +128,27 @@ reader_agreement <- function(data, reader1_col, reader2_col,
   d$.diff <- d[[reader1_col]] - d[[reader2_col]]
 
   summarize_one <- function(z) {
+    r1 <- z[[reader1_col]]
+    r2 <- z[[reader2_col]]
+    mean_age <- (r1 + r2) / 2
+    valid_relative <- is.finite(mean_age) & mean_age > 0
+
+    # Relative precision complements percent agreement (Campana 2001).
+    # APE/CV are undefined when the mean assigned age is zero; those pairs
+    # remain in the absolute diagnostics but are excluded from relative metrics.
+    ape_i <- rep(NA_real_, nrow(z))
+    cv_i <- rep(NA_real_, nrow(z))
+    if (any(valid_relative)) {
+      ape_i[valid_relative] <- 100 *
+        (abs(r1[valid_relative] - mean_age[valid_relative]) +
+         abs(r2[valid_relative] - mean_age[valid_relative])) /
+        (2 * mean_age[valid_relative])
+      cv_i[valid_relative] <- 100 *
+        sqrt(((r1[valid_relative] - mean_age[valid_relative])^2 +
+              (r2[valid_relative] - mean_age[valid_relative])^2) /
+             mean_age[valid_relative]^2)
+    }
+
     data.frame(
       n_pairs = nrow(z),
       exact_agreement = mean(z$.diff == 0),
@@ -135,6 +156,9 @@ reader_agreement <- function(data, reader1_col, reader2_col,
       mean_difference = mean(z$.diff),
       mean_absolute_difference = mean(abs(z$.diff)),
       rmse_difference = sqrt(mean(z$.diff^2)),
+      average_percent_error = if (any(valid_relative)) mean(ape_i, na.rm = TRUE) else NA_real_,
+      coefficient_of_variation = if (any(valid_relative)) mean(cv_i, na.rm = TRUE) else NA_real_,
+      n_relative_precision = sum(valid_relative),
       stringsAsFactors = FALSE
     )
   }
