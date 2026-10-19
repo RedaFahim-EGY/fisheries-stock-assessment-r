@@ -7,7 +7,7 @@ It extends the fully simulated individual-fish monitoring programme from Module 
 ## Scientific questions
 
 - Did the composition of sampled areas, seasons, gears or data sources change through time?
-- How different are pooled annual mean lengths from fixed-design standardized summaries?
+- How different are pooled annual mean lengths from fixed-reference-weighted summaries?
 - Do temporal anomalies move synchronously across spatial areas?
 - Are year-to-year changes directionally consistent among persistent strata?
 - Is an apparent shift concentrated in one gear, potentially indicating selectivity or observation-process change?
@@ -21,7 +21,7 @@ The workflow includes:
 - persistent-stratum screening using minimum annual sample size;
 - annual sampling-composition shares by area and gear;
 - Jensen–Shannon divergence as a descriptive measure of design drift;
-- pooled versus fixed-reference-weight annual mean length;
+- pooled versus fixed-reference-weighted annual mean length;
 - within-stratum annual anomalies;
 - spatial synchrony of matched anomalies;
 - gear-specific anomaly trajectories;
@@ -31,7 +31,7 @@ The workflow includes:
 
 ## Important interpretation rule
 
-Standardization is treated as a **sensitivity analysis**, not as an automatic correction. Raw, pooled and standardized summaries remain visible together because stratification choices can remove both observation artefacts and genuine biological variation.
+Fixed-reference weighting is treated as a **descriptive sensitivity analysis**, not as design-based expansion or an automatic correction. The all-fish pooled and persistent-strata reference-weighted series also differ in coverage. Both should remain visible because choices of strata and weights can obscure observation artefacts or genuine biological variation.
 
 ## Files
 

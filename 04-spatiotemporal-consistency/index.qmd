@@ -109,19 +109,19 @@ ggplot(design_drift, aes(year, js_divergence)) +
 Jensen–Shannon divergence here measures **change in sampling composition**, not ecological distance and not stock status. Its value is diagnostic: years with unusual monitoring composition deserve extra caution when pooled biological summaries also move.
 :::
 
-## 3. Pooled versus fixed-design annual mean length
+## 3. Pooled versus fixed-reference-weighted annual mean length
 
-The pooled mean gives every fish equal weight, which implicitly gives more influence to strata sampled more intensively in a given year. A fixed-design standardized mean instead applies the same long-term reference weights to persistent strata in every year.
+The pooled mean gives every measured fish equal weight, so strata with more sampled fish have greater influence. The fixed-reference-weighted series instead uses the same empirical, long-term sampling shares for the **persistent strata** in each year. These weights are not derived from inclusion probabilities or catch/landings expansion factors; this is a descriptive standardization, **not a design-based estimate of population mean length**.
 
 ```{r}
 #| label: pooled-standardized
-#| fig-cap: "Pooled annual mean length compared with a fixed-design standardized mean based on persistent area × season × gear × source strata."
+#| fig-cap: "All-fish pooled annual mean length compared with a fixed-reference-weighted mean based on persistent area × season × gear × source strata."
 #| fig-width: 8
 #| fig-height: 5
 
 plot_annual <- data.frame(
   year = rep(annual_comparison$year, 2),
-  series = rep(c("Pooled", "Fixed-design standardized"), each = nrow(annual_comparison)),
+  series = rep(c("Pooled", "Fixed-reference weighted"), each = nrow(annual_comparison)),
   mean_length_cm = c(
     annual_comparison$pooled_mean_cm,
     annual_comparison$standardized_mean_cm
@@ -136,22 +136,22 @@ ggplot(plot_annual, aes(year, mean_length_cm, linetype = series)) +
   theme(legend.position = "top")
 ```
 
-The difference between the two curves is not a correction for all forms of bias. It is a **sensitivity diagnostic** showing how much annual summaries can move when the mixture of sampled strata changes.
+The difference is **not an estimate of statistical bias**. The pooled curve includes all eligible sampled strata, whereas the reference-weighted curve includes only persistent strata. Their difference therefore combines **changes in stratum coverage** with **differences in weights among persistent strata**. It cannot attribute the entire contrast to changes in sampling composition, and neither curve is automatically representative of the population.
 
 ```{r}
-#| label: composition-bias
-#| fig-cap: "Difference between pooled and fixed-design standardized annual mean length."
+#| label: pooled-reference-difference
+#| fig-cap: "All-fish pooled minus fixed-reference-weighted mean length (descriptive difference, not estimated bias)."
 #| fig-width: 8
 #| fig-height: 4.5
 
-ggplot(annual_comparison, aes(year, composition_bias_cm)) +
+ggplot(annual_comparison, aes(year, pooled_reference_difference_cm)) +
   geom_hline(yintercept = 0, linewidth = 0.4) +
   geom_col() +
-  labs(x = "Year", y = "Pooled − standardized mean (cm)") +
+  labs(x = "Year", y = "Pooled − reference-weighted mean (cm)") +
   theme_minimal(base_size = 12)
 ```
 
-Across this simulation, the correlation between annual design divergence and the absolute pooled-versus-standardized discrepancy is `r round(design_bias_correlation, 2)`. This is descriptive and specific to the simulated monitoring process; it is not a general threshold or inferential test.
+Across this simulation, the correlation between annual design-cell divergence and the absolute pooled-versus-reference-weighted difference is `r round(sampling_composition_difference_correlation, 2)`. This is descriptive and specific to the simulated monitoring process; it is not a general threshold or inferential test.
 
 ## 4. Remove stable stratum differences before asking about time
 
@@ -337,7 +337,7 @@ None of those diagnoses is itself a stock assessment. They determine what inform
 ::: {.callout-warning}
 ## Do not standardize blindly
 
-A standardized series is not automatically “correct.” The chosen strata and weights must reflect the sampling design and scientific question. Standardization can remove design artefacts, but it can also remove real changes if the stratification is inappropriate. Raw, pooled and standardized views should therefore be retained together.
+A fixed-reference-weighted series is not automatically “correct.” Its empirical reference weights are a sensitivity choice, not population expansion weights. Fixed weighting may reduce some sampling-composition artefacts but can also obscure real changes if the strata or target population are inappropriate. Raw, pooled and reference-weighted views should therefore be retained together.
 :::
 
 ## Assessment-readiness implications
@@ -346,7 +346,7 @@ Before moving to age or life-history information, this workflow would document:
 
 - which area × season × gear × source strata are persistent and comparable;
 - where monitoring composition changes materially through time;
-- whether pooled and fixed-design summaries agree;
+- whether pooled and fixed-reference-weighted summaries agree;
 - whether temporal changes are synchronous across areas;
 - whether a signal is concentrated in one gear or spatial component;
 - whether year-to-year changes are directionally consistent among matched strata;

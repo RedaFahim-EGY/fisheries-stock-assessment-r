@@ -136,7 +136,7 @@ design_drift <- data.frame(
 )
 
 # -----------------------------------------------------------------------------
-# 4. Pooled versus design-standardized annual length
+# 4. Pooled versus fixed-reference-weighted annual length
 # -----------------------------------------------------------------------------
 
 pooled_annual <- aggregate(
@@ -146,9 +146,11 @@ pooled_annual <- aggregate(
 )
 names(pooled_annual)[2] <- "pooled_mean_cm"
 
-# Fixed reference weights are based on the long-term composition of persistent
-# strata. Applying the same weights every year removes year-to-year changes in
-# sampling composition while retaining a realistic, non-equal reference design.
+# Fixed reference weights reflect pooled observed sample counts in persistent
+# strata, not known inclusion probabilities or catch-expansion factors. They
+# support a descriptive sensitivity comparison, not design-unbiased estimation.
+# The all-fish versus reference-weighted contrast also changes which strata
+# are included, so it cannot isolate weighting effects alone.
 reference_n <- aggregate(
   n_fish ~ stratum,
   data = persistent,
@@ -180,7 +182,7 @@ rownames(standardized_annual) <- NULL
 
 annual_comparison <- merge(pooled_annual, standardized_annual, by = "year")
 annual_comparison <- merge(annual_comparison, design_drift, by = "year")
-annual_comparison$composition_bias_cm <-
+annual_comparison$pooled_reference_difference_cm <-
   annual_comparison$pooled_mean_cm - annual_comparison$standardized_mean_cm
 
 # -----------------------------------------------------------------------------
@@ -373,7 +375,7 @@ consistency_audit <- data.frame(
   value = c(
     length(persistent_strata),
     round(max(design_drift$js_divergence), 4),
-    round(max(abs(annual_comparison$composition_bias_cm)), 3),
+    round(max(abs(annual_comparison$pooled_reference_difference_cm)), 3),
     round(max(abs(spatial_contrast_year$west_minus_east_cm), na.rm = TRUE), 3),
     round(max(abs(
       merge(
@@ -393,17 +395,17 @@ consistency_audit <- data.frame(
   interpretation = c(
     "Strata used for like-with-like temporal comparison",
     "Higher values indicate greater drift in sampled design composition",
-    "Quantifies how much pooling can move the annual mean through composition alone",
+    "Descriptive contrast combines nonpersistent-stratum coverage and observed-weight differences",
     "Spatial difference estimated only from matched season/gear/source cells",
     "Checks whether one area dominates the standardized temporal signal"
   ),
   stringsAsFactors = FALSE
 )
 
-# Relationship between changing sample composition and pooled-standardized bias.
-design_bias_correlation <- cor(
+# Descriptive association between design-cell drift and pooled-reference difference.
+sampling_composition_difference_correlation <- cor(
   annual_comparison$js_divergence,
-  abs(annual_comparison$composition_bias_cm),
+  abs(annual_comparison$pooled_reference_difference_cm),
   use = "complete.obs"
 )
 
@@ -412,5 +414,5 @@ stopifnot(
   all(is.finite(annual_comparison$standardized_mean_cm)),
   all(annual_change_consistency$share_positive >= 0 & annual_change_consistency$share_positive <= 1),
   all(is.finite(area_synchrony_table$correlation)),
-  is.finite(design_bias_correlation)
+  is.finite(sampling_composition_difference_correlation)
 )
